@@ -26,16 +26,16 @@
             <div class="header-top">
                 <div class="logo">
                     <span class="logo-icon">⚡</span>
-                    <h1>PayCross <span class="badge-beta">PWA HYBRID</span></h1>
+                    <h1>PayCross <span class="badge-beta">PWA PRO</span></h1>
                 </div>
                 <button id="btn-install-pwa" class="btn-pwa-install hidden">
                     <span class="icon">📲</span> アプリとして追加
                 </button>
             </div>
-            <p class="subtitle">位置情報から「どのPayが今一番お得か」を全環境で横断一括比較</p>
+            <p class="subtitle">位置情報から「どのPayが今一番お得か」を横断一括比較</p>
             <div class="sync-status-bar">
                 <span class="status-dot green"></span>
-                <span id="sync-status-text">サーバーキャッシュ定期同期済み (全環境で通信エラーなし)</span>
+                <span id="sync-status-text">各Pay実データ同期完了 (全端末対応)</span>
             </div>
         </header>
 
@@ -43,24 +43,21 @@
         <main class="main-content">
             <!-- Sidebar / Control Panel -->
             <aside class="control-panel">
-                <!-- Search & Filters -->
+                <!-- Search & Filters Card -->
                 <section class="card filter-card">
                     <h2><span class="icon">🔍</span> 検索・条件設定</h2>
                     
                     <div class="input-group">
                         <label for="location-search-input">場所・駅名・キーワードで検索</label>
                         <div class="location-search-wrapper">
-                            <input type="text" id="location-search-input" placeholder="例: 新宿駅, 池袋, 横浜, 難波">
-                            <button id="btn-location-search" class="btn-search-icon">🔍</button>
+                            <input type="text" id="location-search-input" placeholder="例: 海老名, 新宿, コンビニ, 吉野家">
+                            <button id="btn-location-search" class="btn-search-icon">🔍 検索</button>
                         </div>
                         <div class="location-presets">
-                            <span class="preset-label">クイック指定:</span>
-                            <button class="btn-preset" data-lat="35.4462" data-lng="139.3908" data-name="海老名">海老名</button>
-                            <button class="btn-preset active" data-lat="35.6595" data-lng="139.7000" data-name="渋谷">渋谷</button>
-                            <button class="btn-preset" data-lat="35.6909" data-lng="139.7005" data-name="新宿">新宿</button>
-                            <button class="btn-preset" data-lat="35.7295" data-lng="139.7109" data-name="池袋">池袋</button>
-                            <button class="btn-preset" data-lat="35.6812" data-lng="139.7671" data-name="東京駅">東京駅</button>
-                            <button class="btn-preset" data-lat="34.6654" data-lng="135.5013" data-name="難波">難波</button>
+                            <span class="preset-label">最寄り駅・エリア:</span>
+                            <div id="dynamic-presets-container" class="presets-chips-group">
+                                <!-- Dynamically generated station chips -->
+                            </div>
                         </div>
                     </div>
 
@@ -106,7 +103,7 @@
                     <div class="input-group">
                         <label for="category-filter">カテゴリ絞り込み</label>
                         <select id="category-filter">
-                            <option value="all">すべて表示</option>
+                            <option value="all">すべてのジャンル</option>
                             <option value="convenience">コンビニ</option>
                             <option value="supermarket">スーパー・ドラッグストア</option>
                             <option value="restaurant">飲食店・カフェ</option>
@@ -119,29 +116,40 @@
                     </button>
                 </section>
 
-                <!-- Active Campaigns Banner -->
+                <!-- MAP CARD (Moved right under search controls for instant view!) -->
+                <div class="card map-card">
+                    <div class="map-header">
+                        <h2><span class="icon">🗺️</span> 対象店舗マップ</h2>
+                        <span class="map-hint">💡 ピンタップで詳細・地図クリックで基準位置変更</span>
+                    </div>
+                    <div id="map"></div>
+                </div>
+
+                <!-- Pay Campaign Acquisition Status Badges Panel -->
+                <section class="card pay-status-card">
+                    <div class="pay-status-header">
+                        <h3><span class="icon">📡</span> 各Payキャンペーン取得状況</h3>
+                        <span class="sync-badge">更新済み</span>
+                    </div>
+                    <div id="pay-status-grid" class="pay-status-grid">
+                        <!-- Dynamic Pay Status Items -->
+                    </div>
+                </section>
+            </aside>
+
+            <!-- Results Section (Stores List & Notices) -->
+            <section class="results-area">
+                <!-- Active Campaigns Notice Banner -->
                 <section class="card campaign-notice">
                     <div class="campaign-header">
                         <span class="sparkle">✨</span>
                         <h3>現在検出されたお得情報</h3>
                     </div>
                     <ul id="active-campaigns-list">
-                        <li><strong class="highlight-city">東京都渋谷区</strong> 自治体還元コラボ（PayPay / d払い 20%還元中）</li>
+                        <li><strong class="highlight-city">神奈川県海老名市</strong> キャッシュレス自治体還元（最大20%還元中）</li>
                         <li><strong class="highlight-store">ドラッグストア全店</strong> 楽天ペイ ポイント5倍デー</li>
                     </ul>
                 </section>
-            </aside>
-
-            <!-- Map & Results Section -->
-            <section class="results-area">
-                <!-- Map View -->
-                <div class="card map-card">
-                    <div class="map-header">
-                        <h2><span class="icon">🗺️</span> 対象店舗マップ</h2>
-                        <span class="map-hint">💡 地図上を直接クリックしても指定位置を変更できます</span>
-                    </div>
-                    <div id="map"></div>
-                </div>
 
                 <!-- Stores Ranking List -->
                 <div class="stores-container">

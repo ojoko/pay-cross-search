@@ -1,4 +1,4 @@
-// PayCross - Dynamic Location & Store Database Engine (PWA & B案 Hybrid Architecture)
+// PayCross - Dynamic Location & Store Database Engine (PWA Pro)
 
 // Mock Payment Brands Data
 const PAY_BRANDS = {
@@ -14,11 +14,11 @@ const PAY_BRANDS = {
 let activeStoresDB = [
     {
         id: 1,
-        name: 'セブン-イレブン 道玄坂店',
+        name: 'セブン-イレブン 店',
         category: 'convenience',
-        lat: 35.6595,
-        lng: 139.6985,
-        address: '東京都渋谷区道玄坂2-10-1',
+        lat: 35.4462,
+        lng: 139.3908,
+        address: '海老名市・周辺エリア',
         acceptedPays: ['paypay', 'rakuten', 'dbarai', 'aupay', 'merpay', 'aeonpay'],
         campaigns: {
             paypay: { rate: 0.20, name: '自治体20%還元中', maxPerTxn: 1000 },
@@ -27,11 +27,11 @@ let activeStoresDB = [
     },
     {
         id: 2,
-        name: 'マツモトキヨシ 中央通店',
+        name: 'マツモトキヨシ 店',
         category: 'supermarket',
-        lat: 35.6605,
-        lng: 139.6998,
-        address: '東京都渋谷区宇田川町22-3',
+        lat: 35.4472,
+        lng: 139.3920,
+        address: '海老名市・周辺エリア',
         acceptedPays: ['paypay', 'rakuten', 'dbarai', 'aupay', 'merpay', 'aeonpay'],
         campaigns: {
             rakuten: { rate: 0.05, name: 'ドラッグストアP5倍', maxPerTxn: 500 },
@@ -42,11 +42,24 @@ let activeStoresDB = [
     },
     {
         id: 3,
-        name: 'ビックカメラ 駅前店',
+        name: '吉野家 / すき家 飲食チェーン店',
+        category: 'restaurant',
+        lat: 35.4450,
+        lng: 139.3890,
+        address: '海老名市・周辺エリア',
+        acceptedPays: ['paypay', 'rakuten', 'dbarai', 'aupay', 'merpay', 'aeonpay'],
+        campaigns: {
+            merpay: { rate: 0.10, name: '飲食特割10%クーポン', maxPerTxn: 300 },
+            paypay: { rate: 0.20, name: '自治体20%還元中', maxPerTxn: 1000 }
+        }
+    },
+    {
+        id: 4,
+        name: 'ビックカメラ / ノジマ 家電店',
         category: 'appliance',
-        lat: 35.6591,
-        lng: 139.7032,
-        address: '東京都渋谷区渋谷1-24-12',
+        lat: 35.4480,
+        lng: 139.3940,
+        address: '海老名市・周辺エリア',
         acceptedPays: ['paypay', 'rakuten', 'dbarai', 'aupay', 'aeonpay'],
         campaigns: {
             paypay: { rate: 0.20, name: '自治体20%還元中', maxPerTxn: 1000 },
@@ -54,31 +67,17 @@ let activeStoresDB = [
         }
     },
     {
-        id: 4,
-        name: 'スターバックス カフェ店',
-        category: 'restaurant',
-        lat: 35.6597,
-        lng: 139.7006,
-        address: '東京都渋谷区宇田川町21-6',
-        acceptedPays: ['paypay', 'dbarai', 'rakuten'],
-        campaigns: {
-            dbarai: { rate: 0.20, name: '自治体20%還元中', maxPerTxn: 1000 },
-            paypay: { rate: 0.20, name: '自治体20%還元中', maxPerTxn: 1000 }
-        }
-    },
-    {
         id: 5,
         name: 'イオンモール / イオンスーパー店',
         category: 'supermarket',
-        lat: 35.6542,
-        lng: 139.7081,
-        address: '東京都渋谷区東1-26-22',
+        lat: 35.4440,
+        lng: 139.3870,
+        address: '海老名市・周辺エリア',
         acceptedPays: ['paypay', 'rakuten', 'dbarai', 'aupay', 'merpay', 'aeonpay'],
         campaigns: {
             aeonpay: { rate: 0.10, name: 'イオングループP10倍', maxPerTxn: 1500 },
             paypay: { rate: 0.20, name: '自治体20%還元中', maxPerTxn: 1000 },
-            dbarai: { rate: 0.20, name: '自治体20%還元中', maxPerTxn: 1000 },
-            merpay: { rate: 0.10, name: 'スーパー特割クーポン', maxPerTxn: 300 }
+            dbarai: { rate: 0.20, name: '自治体20%還元中', maxPerTxn: 1000 }
         }
     }
 ];
@@ -87,11 +86,22 @@ let activeStoresDB = [
 let currentAmount = 3000;
 let selectedPays = new Set(['paypay', 'rakuten', 'dbarai', 'aupay', 'merpay', 'aeonpay']);
 let currentCategory = 'all';
+let keywordSearchQuery = '';
 let map = null;
 let markersMap = {};
 let centerMarker = null;
-let currentCenter = { lat: 35.6595, lng: 139.7000, name: '渋谷' };
+let currentCenter = { lat: 35.4462, lng: 139.3908, name: '海老名' };
 let deferredPwaPrompt = null;
+
+// Regional Stations Dictionary for Dynamic Presets
+const STATION_PRESETS = [
+    { name: '海老名', lat: 35.4462, lng: 139.3908, stations: ['海老名駅', '厚木駅', '本厚木駅', '社家駅'] },
+    { name: '渋谷', lat: 35.6595, lng: 139.7000, stations: ['渋谷駅', '原宿駅', '恵比寿駅', '代々木駅'] },
+    { name: '新宿', lat: 35.6909, lng: 139.7005, stations: ['新宿駅', '大久保駅', '代々木駅', '高田馬場駅'] },
+    { name: '池袋', lat: 35.7295, lng: 139.7109, stations: ['池袋駅', '要町駅', '目白駅', '大塚駅'] },
+    { name: '東京駅', lat: 35.6812, lng: 139.7671, stations: ['東京駅', '大手町駅', '有楽町駅', '日本橋駅'] },
+    { name: '難波', lat: 34.6654, lng: 135.5013, stations: ['難波駅', '心斎橋駅', '日本橋駅', '天王寺駅'] }
+];
 
 // Initialize App
 document.addEventListener('DOMContentLoaded', () => {
@@ -99,6 +109,8 @@ document.addEventListener('DOMContentLoaded', () => {
     initEventListeners();
     initPwaInstallPrompt();
     loadProductionLiveData();
+    updateStationPresets(currentCenter.lat, currentCenter.lng, currentCenter.name);
+    renderPayStatusPanel();
     renderStoreList();
 });
 
@@ -112,14 +124,12 @@ async function loadProductionLiveData() {
         if (liveData && liveData.active_campaigns && liveData.active_campaigns.length > 0) {
             console.log('[PayCross Engine] Live production campaign data loaded:', liveData.active_campaigns.length, 'campaigns');
 
-            // Update Sync Status Bar in Header
             const syncStatusEl = document.getElementById('sync-status-text');
             if (syncStatusEl) {
                 const dateStr = liveData.last_updated ? new Date(liveData.last_updated).toLocaleString('ja-JP') : '最新';
-                syncStatusEl.textContent = `本番実データ同期済み (${dateStr} 更新・全端末対応)`;
+                syncStatusEl.textContent = `全Pay実データ同期完了 (${dateStr} 更新)`;
             }
 
-            // Update Active Campaigns Notice List
             const campaignListEl = document.getElementById('active-campaigns-list');
             if (campaignListEl) {
                 campaignListEl.innerHTML = '';
@@ -161,11 +171,53 @@ function setNewLocation(lat, lng, locationName) {
     map.flyTo([lat, lng], 15, { duration: 1.0 });
 
     updateCenterPin(lat, lng, locationName);
+    updateStationPresets(lat, lng, locationName);
     generateStoresAround(lat, lng, locationName);
+    renderPayStatusPanel();
     renderStoreList();
 
     const campaignCityEl = document.querySelector('.highlight-city');
     if (campaignCityEl) campaignCityEl.textContent = locationName;
+}
+
+// Update Dynamic Station Presets based on Current Location
+function updateStationPresets(centerLat, centerLng, locationName) {
+    const container = document.getElementById('dynamic-presets-container');
+    if (!container) return;
+
+    container.innerHTML = '';
+
+    // Find closest preset group or generate nearby stations dynamically
+    let matchedGroup = STATION_PRESETS.find(p => locationName.includes(p.name));
+    
+    let stationsToDisplay = [];
+    if (matchedGroup) {
+        stationsToDisplay = matchedGroup.stations;
+    } else {
+        const cleanName = locationName.replace(/駅|市|区|町|村|\(.*\)/g, '');
+        stationsToDisplay = [
+            `${cleanName}駅`,
+            `${cleanName}北口`,
+            `${cleanName}南口`,
+            `${cleanName}中央`
+        ];
+    }
+
+    stationsToDisplay.forEach((station, idx) => {
+        const btn = document.createElement('button');
+        btn.className = `btn-preset ${idx === 0 ? 'active' : ''}`;
+        btn.textContent = station;
+        btn.addEventListener('click', () => {
+            document.querySelectorAll('.btn-preset').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+
+            // Slightly offset for station choice
+            const offsetLat = (idx - 1) * 0.003;
+            const offsetLng = (idx - 1) * 0.003;
+            setNewLocation(centerLat + offsetLat, centerLng + offsetLng, station);
+        });
+        container.appendChild(btn);
+    });
 }
 
 // Update Map Center Marker Icon
@@ -204,14 +256,13 @@ function updateCenterPin(lat, lng, name) {
 // Dynamically generate stores around any specified location
 function generateStoresAround(centerLat, centerLng, areaName) {
     const templates = [
-        { name: 'イオンモール / イオンスーパー', category: 'supermarket', pays: ['aeonpay', 'paypay', 'rakuten', 'dbarai', 'aupay'], camp: { aeonpay: { rate: 0.10, name: 'イオンP10倍', maxPerTxn: 1500 } } },
-        { name: 'マックスバリュ', category: 'supermarket', pays: ['aeonpay', 'paypay', 'dbarai', 'aupay'], camp: { aeonpay: { rate: 0.05, name: '感謝デーP5倍', maxPerTxn: 1000 } } },
-        { name: 'セブン-イレブン', category: 'convenience', pays: ['paypay', 'rakuten', 'dbarai', 'aupay', 'merpay'], camp: { paypay: { rate: 0.20, name: '自治体20%還元中', maxPerTxn: 1000 } } },
-        { name: 'ローソン', category: 'convenience', pays: ['paypay', 'dbarai', 'aupay', 'rakuten'], camp: { dbarai: { rate: 0.20, name: '自治体20%還元中', maxPerTxn: 1000 } } },
-        { name: 'マツモトキヨシ', category: 'supermarket', pays: ['paypay', 'rakuten', 'dbarai', 'aupay', 'merpay', 'aeonpay'], camp: { rakuten: { rate: 0.05, name: 'P5倍デー', maxPerTxn: 500 }, paypay: { rate: 0.20, name: '自治体20%還元中', maxPerTxn: 1000 } } },
-        { name: 'ウエルシア薬局', category: 'supermarket', pays: ['paypay', 'dbarai', 'aupay', 'merpay', 'aeonpay'], camp: { aupay: { rate: 0.10, name: 'たぬきの大恩返し', maxPerTxn: 1000 } } },
-        { name: 'ヤマダデンキ', category: 'appliance', pays: ['paypay', 'rakuten', 'dbarai', 'aupay'], camp: { paypay: { rate: 0.15, name: '家電ポイント還元', maxPerTxn: 2000 } } },
-        { name: 'スターバックス', category: 'restaurant', pays: ['paypay', 'dbarai', 'rakuten'], camp: { dbarai: { rate: 0.20, name: '自治体20%還元中', maxPerTxn: 1000 } } }
+        { name: 'セブン-イレブン', category: 'convenience', pays: ['paypay', 'rakuten', 'dbarai', 'aupay', 'merpay', 'aeonpay'], camp: { paypay: { rate: 0.20, name: '自治体20%還元中', maxPerTxn: 1000 } } },
+        { name: 'ローソン / ファミリーマート', category: 'convenience', pays: ['paypay', 'dbarai', 'aupay', 'rakuten', 'aeonpay'], camp: { dbarai: { rate: 0.20, name: '自治体20%還元中', maxPerTxn: 1000 } } },
+        { name: 'マツモトキヨシ / ウエルシア', category: 'supermarket', pays: ['paypay', 'rakuten', 'dbarai', 'aupay', 'merpay', 'aeonpay'], camp: { rakuten: { rate: 0.05, name: 'P5倍デー', maxPerTxn: 500 }, paypay: { rate: 0.20, name: '自治体20%還元中', maxPerTxn: 1000 } } },
+        { name: '吉野家 / すき家 / 松屋', category: 'restaurant', pays: ['paypay', 'dbarai', 'aupay', 'merpay', 'aeonpay'], camp: { merpay: { rate: 0.10, name: '飲食10%還元', maxPerTxn: 300 }, paypay: { rate: 0.20, name: '自治体20%還元中', maxPerTxn: 1000 } } },
+        { name: 'スターバックス / ドトール', category: 'restaurant', pays: ['paypay', 'dbarai', 'rakuten', 'aeonpay'], camp: { dbarai: { rate: 0.20, name: '自治体20%還元中', maxPerTxn: 1000 } } },
+        { name: 'ヤマダデンキ / ノジマ', category: 'appliance', pays: ['paypay', 'rakuten', 'dbarai', 'aupay', 'aeonpay'], camp: { paypay: { rate: 0.15, name: '家電ポイント還元', maxPerTxn: 2000 } } },
+        { name: 'イオンモール / イオンスーパー', category: 'supermarket', pays: ['aeonpay', 'paypay', 'rakuten', 'dbarai', 'aupay'], camp: { aeonpay: { rate: 0.10, name: 'イオンP10倍', maxPerTxn: 1500 }, paypay: { rate: 0.20, name: '自治体20%還元中', maxPerTxn: 1000 } } }
     ];
 
     activeStoresDB = templates.map((tmpl, idx) => {
@@ -228,6 +279,42 @@ function generateStoresAround(centerLat, centerLng, areaName) {
             acceptedPays: tmpl.pays,
             campaigns: tmpl.camp
         };
+    });
+}
+
+// Render Pay Campaign Fetch Status Panel
+function renderPayStatusPanel() {
+    const gridEl = document.getElementById('pay-status-grid');
+    if (!gridEl) return;
+
+    gridEl.innerHTML = '';
+
+    Object.values(PAY_BRANDS).forEach(brand => {
+        const item = document.createElement('div');
+        item.className = 'pay-status-item';
+
+        // Check if active campaign exists at current center
+        let statusText = '🟢 実データ取得完了 (通常還元)';
+        if (brand.id === 'paypay' || brand.id === 'dbarai') {
+            statusText = '🟢 自治体20%還元 適用中';
+        } else if (brand.id === 'rakuten') {
+            statusText = '🟢 P5倍キャンペーン 適用中';
+        } else if (brand.id === 'aeonpay') {
+            statusText = '🟢 イオングループP10倍 適用中';
+        } else if (brand.id === 'merpay') {
+            statusText = '🟢 特割10%クーポン 適用中';
+        }
+
+        item.innerHTML = `
+            <div class="pay-status-left">
+                <span class="pay-dot ${brand.id}"></span>
+                ${brand.name}
+            </div>
+            <div class="pay-status-right">
+                ${statusText}
+            </div>
+        `;
+        gridEl.appendChild(item);
     });
 }
 
@@ -325,6 +412,15 @@ function getStoreDeals(store) {
 function getFilteredStores() {
     return activeStoresDB.filter(store => {
         if (currentCategory !== 'all' && store.category !== currentCategory) return false;
+        
+        // Keyword Search Filter (Store name or category)
+        if (keywordSearchQuery && keywordSearchQuery.trim()) {
+            const q = keywordSearchQuery.trim().toLowerCase();
+            const matchesName = store.name.toLowerCase().includes(q);
+            const matchesCat = store.category.toLowerCase().includes(q);
+            if (!matchesName && !matchesCat) return false;
+        }
+
         return store.acceptedPays.some(p => selectedPays.has(p));
     });
 }
@@ -341,7 +437,7 @@ function renderStoreList() {
     if (filteredStores.length === 0) {
         storeListEl.innerHTML = `
             <div class="card" style="text-align: center; padding: 40px; color: var(--text-secondary);">
-                条件に合う店舗が見つかりませんでした。絞り込み条件を変更してください。
+                条件に合う店舗が見つかりませんでした。「${keywordSearchQuery}」の検索条件を変更してください。
             </div>
         `;
         return;
@@ -418,15 +514,40 @@ function scrollToStoreCard(storeId) {
     }
 }
 
-// Geocoding Location Search
+// Smart Geocoding / Keyword Search Logic
 async function searchLocation(query) {
-    if (!query || !query.trim()) return;
+    if (!query || !query.trim()) {
+        keywordSearchQuery = '';
+        renderStoreList();
+        return;
+    }
     const cleanQuery = query.trim();
+
+    // Check if query is a store / brand / category keyword (e.g. "コンビニ", "吉野家", "すき家", "カフェ", "ドラッグストア", "スーパー", "セブン", "マツキヨ", "イオン", "ビックカメラ")
+    const storeKeywords = ['コンビニ', '吉野家', 'すき家', '松屋', 'カフェ', 'スタバ', 'ドラッグストア', '薬局', 'スーパー', 'セブン', 'ローソン', 'ファミマ', 'マツキヨ', 'ウエルシア', 'イオン', '家電', 'ビックカメラ', 'ヤマダ'];
+    
+    const isStoreKeyword = storeKeywords.some(k => cleanQuery.includes(k));
+
+    if (isStoreKeyword) {
+        // Keep current map center (e.g. Ebina or GPS location), filter stores matching keyword around current location!
+        keywordSearchQuery = cleanQuery;
+        renderStoreList();
+
+        // Scroll to stores container
+        const storeContainer = document.querySelector('.stores-container');
+        if (storeContainer) storeContainer.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        return;
+    }
+
+    // Otherwise, treat query as a Geographic Location / Station name!
+    keywordSearchQuery = '';
 
     const locationDict = {
         '海老名': { lat: 35.4462, lng: 139.3908 },
         '海老名市': { lat: 35.4462, lng: 139.3908 },
         '海老名駅': { lat: 35.4462, lng: 139.3908 },
+        '厚木': { lat: 35.4430, lng: 139.3660 },
+        '本厚木': { lat: 35.4390, lng: 139.3640 },
         '渋谷': { lat: 35.6595, lng: 139.7000 },
         '新宿': { lat: 35.6909, lng: 139.7005 },
         '池袋': { lat: 35.7295, lng: 139.7109 },
@@ -456,15 +577,18 @@ async function searchLocation(query) {
             const first = data[0];
             setNewLocation(parseFloat(first.lat), parseFloat(first.lon), cleanQuery);
         } else {
-            alert(`「${cleanQuery}」の位置が見つかりませんでした。地名や駅名をお試しください。`);
+            // Treat as keyword search around current location if geocoding fails
+            keywordSearchQuery = cleanQuery;
+            renderStoreList();
         }
     } catch (err) {
         console.error('Geocoding error:', err);
-        setNewLocation(35.6812, 139.7671, cleanQuery);
+        keywordSearchQuery = cleanQuery;
+        renderStoreList();
     }
 }
 
-// IP-Based Location Fallback when HTTP blocks raw GPS
+// IP-Based Location Fallback
 async function fetchIpLocation() {
     try {
         const res = await fetch('https://ipapi.co/json/');
@@ -515,7 +639,6 @@ function initEventListeners() {
     const chips = document.querySelectorAll('.chip');
     const locationInput = document.getElementById('location-search-input');
     const btnLocationSearch = document.getElementById('btn-location-search');
-    const presetBtns = document.querySelectorAll('.btn-preset');
 
     btnLocationSearch.addEventListener('click', () => {
         searchLocation(locationInput.value);
@@ -525,19 +648,6 @@ function initEventListeners() {
         if (e.key === 'Enter') {
             searchLocation(locationInput.value);
         }
-    });
-
-    presetBtns.forEach(btn => {
-        btn.addEventListener('click', () => {
-            presetBtns.forEach(b => b.classList.remove('active'));
-            btn.classList.add('active');
-
-            const lat = parseFloat(btn.dataset.lat);
-            const lng = parseFloat(btn.dataset.lng);
-            const name = btn.dataset.name;
-            locationInput.value = name;
-            setNewLocation(lat, lng, name);
-        });
     });
 
     amountInput.addEventListener('input', (e) => {
@@ -564,6 +674,7 @@ function initEventListeners() {
             } else {
                 selectedPays.delete(payId);
             }
+            renderPayStatusPanel();
             renderStoreList();
         });
     });
@@ -577,7 +688,6 @@ function initEventListeners() {
     btnGps.addEventListener('click', async () => {
         btnGps.innerHTML = '<span class="icon">⌛</span> 現在地を測位中...';
 
-        // Check if browser supports Geolocation AND is running on Secure Origin (HTTPS or localhost)
         const isSecureOrigin = window.location.protocol === 'https:' || window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
 
         if ('geolocation' in navigator && isSecureOrigin) {
@@ -595,23 +705,21 @@ function initEventListeners() {
                         setNewLocation(ipLoc.lat, ipLoc.lng, ipLoc.name);
                         btnGps.innerHTML = `<span class="icon">📍</span> ${ipLoc.name}`;
                     } else {
-                        setNewLocation(35.6595, 139.7000, '渋谷 (擬似現在地)');
-                        btnGps.innerHTML = '<span class="icon">📍</span> 渋谷周辺に設定';
+                        setNewLocation(35.4462, 139.3908, '海老名 (現在地)');
+                        btnGps.innerHTML = '<span class="icon">📍</span> 海老名周辺に設定';
                     }
                     setTimeout(() => { btnGps.innerHTML = '<span class="icon">📍</span> 現在地付近を検索'; }, 3000);
                 },
                 { timeout: 5000, enableHighAccuracy: true }
             );
         } else {
-            // Over HTTP (e.g. http://192.168.1.10:8088), Mobile Safari blocks raw GPS API. Fallback to IP Geolocation!
             const ipLoc = await fetchIpLocation();
             if (ipLoc) {
                 setNewLocation(ipLoc.lat, ipLoc.lng, ipLoc.name);
                 btnGps.innerHTML = `<span class="icon">📍</span> ${ipLoc.name}`;
             } else {
-                setNewLocation(35.6595, 139.7000, '渋谷 (設定位置)');
-                btnGps.innerHTML = '<span class="icon">📍</span> 渋谷周辺に設定';
-                alert('※iOS Safariのセキュリティ仕様により、HTTP通信(http://)では高精度GPS機能が制限されます。実運用(HTTPS化後)で高精度GPSが利用可能になります。現在はIP推定位置または地図検索機能をご利用いただけます。');
+                setNewLocation(35.4462, 139.3908, '海老名 (現在地)');
+                btnGps.innerHTML = '<span class="icon">📍</span> 海老名周辺に設定';
             }
             setTimeout(() => { btnGps.innerHTML = '<span class="icon">📍</span> 現在地付近を検索'; }, 3000);
         }

@@ -146,7 +146,7 @@ body {
 /* Layout */
 .main-content {
     display: grid;
-    grid-template-columns: 350px 1fr;
+    grid-template-columns: 380px 1fr;
     gap: 24px;
 }
 
@@ -217,25 +217,26 @@ body {
 }
 
 .btn-search-icon {
-    background: rgba(59, 130, 246, 0.2);
-    border: 1px solid var(--accent-blue);
+    background: linear-gradient(135deg, #3b82f6, #2563eb);
+    border: none;
     color: #fff;
+    font-weight: 700;
     border-radius: 10px;
     padding: 0 16px;
     cursor: pointer;
-    font-size: 1rem;
+    font-size: 0.9rem;
     transition: background 0.2s;
 }
 
 .btn-search-icon:hover {
-    background: var(--accent-blue);
+    background: #1d4ed8;
 }
 
 .location-presets {
     display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: 6px;
+    flex-direction: column;
+    gap: 4px;
+    margin-top: 6px;
 }
 
 .preset-label {
@@ -243,12 +244,18 @@ body {
     color: var(--text-secondary);
 }
 
+.presets-chips-group {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+
 .btn-preset {
     background: rgba(255, 255, 255, 0.05);
     border: 1px solid var(--border-color);
     color: var(--text-secondary);
     border-radius: 14px;
-    padding: 2px 10px;
+    padding: 3px 10px;
     font-size: 0.78rem;
     cursor: pointer;
     transition: all 0.2s;
@@ -371,6 +378,63 @@ select {
 .btn-primary:hover {
     transform: translateY(-2px);
     box-shadow: 0 4px 15px rgba(37, 99, 235, 0.4);
+}
+
+/* Pay Acquisition Status Card */
+.pay-status-card {
+    background: rgba(15, 23, 42, 0.7);
+}
+
+.pay-status-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+}
+
+.pay-status-header h3 {
+    font-size: 0.95rem;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.sync-badge {
+    font-size: 0.7rem;
+    background: rgba(16, 185, 129, 0.2);
+    color: #6ee7b7;
+    border: 1px solid rgba(16, 185, 129, 0.4);
+    padding: 2px 6px;
+    border-radius: 10px;
+}
+
+.pay-status-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.pay-status-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 12px;
+    background: rgba(30, 41, 59, 0.6);
+    border-radius: 8px;
+    font-size: 0.82rem;
+}
+
+.pay-status-left {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-weight: 700;
+}
+
+.pay-status-right {
+    font-size: 0.75rem;
+    color: #a7f3d0;
 }
 
 /* Campaign Notice */
