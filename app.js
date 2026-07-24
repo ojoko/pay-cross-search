@@ -1,13 +1,13 @@
 // PayCross - Dynamic Location & Store Database Engine (PWA Pro)
 
-// Mock Payment Brands Data
+// Payment Brands Data with App Deep Links
 const PAY_BRANDS = {
-    paypay: { id: 'paypay', name: 'PayPay', color: 'var(--color-paypay)', baseRate: 0.005 },
-    rakuten: { id: 'rakuten', name: '楽天ペイ', color: 'var(--color-rakuten)', baseRate: 0.015 },
-    dbarai: { id: 'dbarai', name: 'd払い', color: 'var(--color-dbarai)', baseRate: 0.005 },
-    aupay: { id: 'aupay', name: 'au PAY', color: 'var(--color-aupay)', baseRate: 0.005 },
-    merpay: { id: 'merpay', name: 'メルペイ', color: 'var(--color-merpay)', baseRate: 0.005 },
-    aeonpay: { id: 'aeonpay', name: 'イオンPay', color: 'var(--color-aeonpay)', baseRate: 0.005 }
+    paypay: { id: 'paypay', name: 'PayPay', color: 'var(--color-paypay)', baseRate: 0.005, deepLink: 'paypay://', webFallback: 'https://paypay.ne.jp/' },
+    rakuten: { id: 'rakuten', name: '楽天ペイ', color: 'var(--color-rakuten)', baseRate: 0.015, deepLink: 'rakutenpay://', webFallback: 'https://pay.rakuten.co.jp/' },
+    dbarai: { id: 'dbarai', name: 'd払い', color: 'var(--color-dbarai)', baseRate: 0.005, deepLink: 'dbarai://', webFallback: 'https://service.smt.docomo.ne.jp/keitai_payment/' },
+    aupay: { id: 'aupay', name: 'au PAY', color: 'var(--color-aupay)', baseRate: 0.005, deepLink: 'aupay://', webFallback: 'https://aupay.auone.jp/' },
+    merpay: { id: 'merpay', name: 'メルペイ', color: 'var(--color-merpay)', baseRate: 0.005, deepLink: 'mercari://', webFallback: 'https://www.mercari.com/jp/pay/' },
+    aeonpay: { id: 'aeonpay', name: 'イオンPay', color: 'var(--color-aeonpay)', baseRate: 0.005, deepLink: 'iaeon://', webFallback: 'https://www.aeon.co.jp/service/aeonpay/' }
 };
 
 // Base Stores Seed Data
@@ -474,6 +474,9 @@ function renderStoreList() {
                     <div class="rank-right">
                         <div class="reward-amount">+${deal.rewardAmount.toLocaleString()} pt</div>
                         <div class="reward-rate">還元率 ${(deal.effectiveRate * 100).toFixed(1)}%</div>
+                        <button class="btn-pay-launch" onclick="event.stopPropagation(); launchPayApp('${deal.payId}');">
+                            アプリ起動 🚀
+                        </button>
                     </div>
                 </div>
             `;
@@ -623,6 +626,24 @@ async function fetchIpLocation() {
         console.log('IP location fallback unavailable:', e);
     }
     return null;
+}
+
+// Launch Native Pay App via Deep Link (with Web fallback)
+function launchPayApp(payId) {
+    const brand = PAY_BRANDS[payId];
+    if (!brand) return;
+
+    const startTime = Date.now();
+    
+    // Attempt URL Scheme launch on iOS / Android
+    window.location.href = brand.deepLink;
+
+    // Fallback to official web page if app is not installed
+    setTimeout(() => {
+        if (Date.now() - startTime < 1800) {
+            window.open(brand.webFallback, '_blank');
+        }
+    }, 1200);
 }
 
 // PWA Install Prompt Handler
