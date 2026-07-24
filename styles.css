@@ -196,9 +196,65 @@ body {
 
 /* Location Search & Presets */
 .location-search-wrapper {
+    position: relative;
     display: flex;
     gap: 8px;
     margin-bottom: 8px;
+}
+
+.input-group {
+    position: relative;
+    margin-bottom: 18px;
+}
+
+/* Autocomplete Dropdown Styling */
+.autocomplete-dropdown {
+    position: absolute;
+    top: 68px;
+    left: 0;
+    right: 0;
+    z-index: 1000;
+    background: #1e293b;
+    border: 1px solid var(--accent-blue);
+    border-radius: 12px;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
+    max-height: 240px;
+    overflow-y: auto;
+}
+
+.autocomplete-dropdown.hidden {
+    display: none;
+}
+
+.autocomplete-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 14px;
+    font-size: 0.88rem;
+    color: #f8fafc;
+    cursor: pointer;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    transition: background 0.15s;
+}
+
+.autocomplete-item:last-child {
+    border-bottom: none;
+}
+
+.autocomplete-item:hover, .autocomplete-item.active {
+    background: rgba(59, 130, 246, 0.25);
+    color: #60a5fa;
+}
+
+.autocomplete-item .icon {
+    font-size: 1.1rem;
+}
+
+.autocomplete-item .subtext {
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+    margin-left: auto;
 }
 
 .location-search-wrapper input[type="text"] {

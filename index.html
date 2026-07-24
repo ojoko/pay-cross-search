@@ -48,11 +48,14 @@
                     <h2><span class="icon">🔍</span> 検索・条件設定</h2>
                     
                     <div class="input-group">
-                        <label for="location-search-input">場所・駅名・キーワードで検索</label>
+                        <label for="location-search-input">場所・駅名・店舗名で検索</label>
                         <div class="location-search-wrapper">
-                            <input type="text" id="location-search-input" placeholder="例: 海老名, 新宿, コンビニ, 吉野家">
+                            <input type="text" id="location-search-input" placeholder="例: 海老名, 吉野家, イオン" autocomplete="off">
                             <button id="btn-location-search" class="btn-search-icon">🔍 検索</button>
                         </div>
+                        <!-- Live Autocomplete Suggestion Dropdown -->
+                        <div id="search-autocomplete-dropdown" class="autocomplete-dropdown hidden"></div>
+
                         <div class="location-presets">
                             <span class="preset-label">最寄り駅・エリア:</span>
                             <div id="dynamic-presets-container" class="presets-chips-group">

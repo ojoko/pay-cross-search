@@ -41,6 +41,7 @@ document.addEventListener('DOMContentLoaded', () => {
     initGoogleMap();
     initEventListeners();
     initPwaInstallPrompt();
+    initAutocompleteLogic();
     loadProductionLiveData();
 });
 
@@ -577,6 +578,80 @@ function initPwaInstallPrompt() {
             installBtn.classList.add('hidden');
         });
     }
+}
+
+// Live Autocomplete Suggestion Logic while typing
+function initAutocompleteLogic() {
+    const locationInput = document.getElementById('location-search-input');
+    const dropdownEl = document.getElementById('search-autocomplete-dropdown');
+    if (!locationInput || !dropdownEl) return;
+
+    const AUTOCOMPLETE_CANDIDATES = [
+        { text: '海老名駅', type: 'station', lat: 35.4462, lng: 139.3908, sub: '神奈川県海老名市' },
+        { text: '海老名市役所', type: 'place', lat: 35.4475, lng: 139.3940, sub: '神奈川県海老名市' },
+        { text: 'ららぽーと海老名', type: 'place', lat: 35.4468, lng: 139.3888, sub: 'ショッピングモール' },
+        { text: 'ビナウォーク海老名', type: 'place', lat: 35.4455, lng: 139.3925, sub: '商業施設' },
+        { text: '吉野家 海老名店', type: 'store', lat: 35.4461, lng: 139.3905, sub: '飲食店 (PayPay 20%還元中)' },
+        { text: 'マツモトキヨシ 海老名店', type: 'store', lat: 35.4472, lng: 139.3920, sub: 'ドラッグストア' },
+        { text: 'イオンモール海老名', type: 'store', lat: 35.4440, lng: 139.3870, sub: 'イオンPay 10倍' },
+        { text: 'セブン-イレブン 海老名店', type: 'store', lat: 35.4470, lng: 139.3910, sub: 'コンビニ' },
+        { text: '厚木駅', type: 'station', lat: 35.4430, lng: 139.3660, sub: '神奈川県海老名市' },
+        { text: '本厚木駅', type: 'station', lat: 35.4390, lng: 139.3640, sub: '神奈川県厚木市' },
+        { text: '町田駅', type: 'station', lat: 35.5420, lng: 139.4450, sub: '東京都町田市' },
+        { text: '渋谷駅', type: 'station', lat: 35.6595, lng: 139.7000, sub: '東京都渋谷区' },
+        { text: '新宿駅', type: 'station', lat: 35.6909, lng: 139.7005, sub: '東京都新宿区' },
+        { text: '池袋駅', type: 'station', lat: 35.7295, lng: 139.7109, sub: '東京都豊島区' },
+        { text: '東京駅', type: 'station', lat: 35.6812, lng: 139.7671, sub: '東京都千代田区' },
+        { text: '横浜駅', type: 'station', lat: 35.4658, lng: 139.6223, sub: '神奈川県横浜市' }
+    ];
+
+    locationInput.addEventListener('input', (e) => {
+        const val = e.target.value.trim().toLowerCase();
+        if (!val) {
+            dropdownEl.classList.add('hidden');
+            return;
+        }
+
+        // Filter matching candidates
+        const matches = AUTOCOMPLETE_CANDIDATES.filter(c => 
+            c.text.toLowerCase().includes(val) || c.sub.toLowerCase().includes(val)
+        );
+
+        if (matches.length === 0) {
+            dropdownEl.classList.add('hidden');
+            return;
+        }
+
+        dropdownEl.innerHTML = '';
+        matches.slice(0, 5).forEach(item => {
+            const div = document.createElement('div');
+            div.className = 'autocomplete-item';
+
+            const icon = item.type === 'station' ? '🚉' : (item.type === 'store' ? '🏪' : '📍');
+            div.innerHTML = `
+                <span class="icon">${icon}</span>
+                <span>${item.text}</span>
+                <span class="subtext">${item.sub}</span>
+            `;
+
+            div.addEventListener('click', () => {
+                locationInput.value = item.text;
+                dropdownEl.classList.add('hidden');
+                setNewLocation(item.lat, item.lng, item.text);
+            });
+
+            dropdownEl.appendChild(div);
+        });
+
+        dropdownEl.classList.remove('hidden');
+    });
+
+    // Close dropdown when clicking outside
+    document.addEventListener('click', (e) => {
+        if (!locationInput.contains(e.target) && !dropdownEl.contains(e.target)) {
+            dropdownEl.classList.add('hidden');
+        }
+    });
 }
 
 // Event Listeners
