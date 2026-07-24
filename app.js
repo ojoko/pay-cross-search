@@ -363,6 +363,11 @@ function renderMapMarkers() {
                 <div style="margin-top: 6px; font-weight: bold; color: #10b981;">
                     最安決済: ${topDeal ? topDeal.brand.name + ' (' + topDeal.rewardAmount + '円分還元)' : '対象外'}
                 </div>
+                <div style="margin-top: 8px;">
+                    <button class="btn-gmap-link" onclick="event.stopPropagation(); window.open('https://www.google.com/maps/search/?api=1&query=${store.lat},${store.lng}', '_blank');">
+                        🗺️ Googleマップでナビ
+                    </button>
+                </div>
             </div>
         `;
         marker.bindPopup(popupContent);
@@ -486,7 +491,12 @@ function renderStoreList() {
             <div class="store-card-header">
                 <div class="store-info-main">
                     <h3>${store.name} <span class="category-tag">${categoryNames[store.category] || ''}</span></h3>
-                    <div class="store-address">📍 ${store.address}</div>
+                    <div class="store-address">
+                        📍 ${store.address}
+                        <button class="btn-gmap-link-sm" onclick="event.stopPropagation(); window.open('https://www.google.com/maps/search/?api=1&query=${store.lat},${store.lng}', '_blank');">
+                            🗺️ Googleマップ
+                        </button>
+                    </div>
                 </div>
                 ${topDeal ? `
                     <div class="best-deal-badge">
