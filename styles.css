@@ -548,12 +548,14 @@ select {
     border: 1px solid var(--border-color);
     border-radius: 16px;
     padding: 20px;
-    transition: transform 0.2s, border-color 0.2s;
+    cursor: pointer;
+    transition: transform 0.2s, border-color 0.2s, box-shadow 0.2s;
 }
 
-.store-card:hover {
-    border-color: rgba(59, 130, 246, 0.4);
+.store-card:hover, .store-card:active {
+    border-color: var(--accent-blue);
     transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(59, 130, 246, 0.25);
 }
 
 .store-card-header {

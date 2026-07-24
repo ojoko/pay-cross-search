@@ -497,6 +497,25 @@ function renderStoreList() {
             </div>
         `;
 
+        cardEl.addEventListener('click', (e) => {
+            // Pan map to store coordinates & open popup
+            if (map) {
+                map.flyTo([store.lat, store.lng], 17, { duration: 0.8 });
+            }
+            const marker = markersMap[store.id];
+            if (marker) {
+                marker.openPopup();
+            }
+
+            // Smooth scroll up to map if on mobile viewport
+            if (window.innerWidth <= 1024) {
+                const mapCard = document.querySelector('.map-card');
+                if (mapCard) {
+                    mapCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                }
+            }
+        });
+
         storeListEl.appendChild(cardEl);
     });
 
