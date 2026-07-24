@@ -1,0 +1,37 @@
+{
+  "last_updated": "2026-07-24T17:59:54.926398+00:00",
+  "sync_status": "success",
+  "active_campaigns": [
+    {
+      "campaign_id": "shibuya-2026-07",
+      "title": "東京都渋谷区 自治体還元コラボ（最大20%還元）",
+      "target_pay": "paypay",
+      "target_region": "東京都渋谷区",
+      "bonus_rate": 0.2,
+      "max_per_txn": 1000,
+      "start_date": "2026-07-01",
+      "end_date": "2026-08-31"
+    },
+    {
+      "campaign_id": "shibuya-dbarai-2026",
+      "title": "東京都渋谷区 d払い自治体還元（最大20%還元）",
+      "target_pay": "dbarai",
+      "target_region": "東京都渋谷区",
+      "bonus_rate": 0.2,
+      "max_per_txn": 1000,
+      "start_date": "2026-07-01",
+      "end_date": "2026-08-31"
+    },
+    {
+      "campaign_id": "drugstore-rakuten-p5",
+      "title": "全国ドラッグストア 楽天ペイ ポイント5倍デー",
+      "target_pay": "rakuten",
+      "target_region": "全国",
+      "bonus_rate": 0.05,
+      "max_per_txn": 500,
+      "start_date": "2026-07-20",
+      "end_date": "2026-07-31"
+    }
+  ],
+  "stores_count": 5
+}

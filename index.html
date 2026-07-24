@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="theme-color" content="#0f172a">
+    <title>PayCross - 電子決済お得横断検索 (PWA)</title>
+
+    <!-- Web App Manifest for PWA -->
+    <link rel="manifest" href="manifest.json">
+    <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/893/893081.png">
+
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&family=Noto+Sans+JP:wght@400;500;700;900&display=swap" rel="stylesheet">
+    
+    <!-- Leaflet CSS (Map API) -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="app-container">
+        <!-- Header -->
+        <header class="app-header">
+            <div class="header-top">
+                <div class="logo">
+                    <span class="logo-icon">⚡</span>
+                    <h1>PayCross <span class="badge-beta">PWA HYBRID</span></h1>
+                </div>
+                <button id="btn-install-pwa" class="btn-pwa-install hidden">
+                    <span class="icon">📲</span> アプリとして追加
+                </button>
+            </div>
+            <p class="subtitle">位置情報から「どのPayが今一番お得か」を全環境で横断一括比較</p>
+            <div class="sync-status-bar">
+                <span class="status-dot green"></span>
+                <span id="sync-status-text">サーバーキャッシュ定期同期済み (全環境で通信エラーなし)</span>
+            </div>
+        </header>
+
+        <!-- Main Layout Grid -->
+        <main class="main-content">
+            <!-- Sidebar / Control Panel -->
+            <aside class="control-panel">
+                <!-- Search & Filters -->
+                <section class="card filter-card">
+                    <h2><span class="icon">🔍</span> 検索・条件設定</h2>
+                    
+                    <div class="input-group">
+                        <label for="location-search-input">場所・駅名・キーワードで検索</label>
+                        <div class="location-search-wrapper">
+                            <input type="text" id="location-search-input" placeholder="例: 新宿駅, 池袋, 横浜, 難波">
+                            <button id="btn-location-search" class="btn-search-icon">🔍</button>
+                        </div>
+                        <div class="location-presets">
+                            <span class="preset-label">クイック指定:</span>
+                            <button class="btn-preset" data-lat="35.4462" data-lng="139.3908" data-name="海老名">海老名</button>
+                            <button class="btn-preset active" data-lat="35.6595" data-lng="139.7000" data-name="渋谷">渋谷</button>
+                            <button class="btn-preset" data-lat="35.6909" data-lng="139.7005" data-name="新宿">新宿</button>
+                            <button class="btn-preset" data-lat="35.7295" data-lng="139.7109" data-name="池袋">池袋</button>
+                            <button class="btn-preset" data-lat="35.6812" data-lng="139.7671" data-name="東京駅">東京駅</button>
+                            <button class="btn-preset" data-lat="34.6654" data-lng="135.5013" data-name="難波">難波</button>
+                        </div>
+                    </div>
+
+                    <div class="input-group">
+                        <label for="purchase-amount">予定のお買い物金額 (円)</label>
+                        <div class="amount-input-wrapper">
+                            <input type="number" id="purchase-amount" value="3000" min="100" step="100">
+                            <span class="currency">円</span>
+                        </div>
+                        <input type="range" id="amount-slider" min="500" max="30000" step="500" value="3000">
+                    </div>
+
+                    <div class="input-group">
+                        <label>使用したい決済サービス</label>
+                        <div class="pay-checkboxes">
+                            <label class="chip checked" data-pay="paypay">
+                                <input type="checkbox" checked value="paypay">
+                                <span class="pay-dot paypay"></span>PayPay
+                            </label>
+                            <label class="chip checked" data-pay="rakuten">
+                                <input type="checkbox" checked value="rakuten">
+                                <span class="pay-dot rakuten"></span>楽天ペイ
+                            </label>
+                            <label class="chip checked" data-pay="dbarai">
+                                <input type="checkbox" checked value="dbarai">
+                                <span class="pay-dot dbarai"></span>d払い
+                            </label>
+                            <label class="chip checked" data-pay="aupay">
+                                <input type="checkbox" checked value="aupay">
+                                <span class="pay-dot aupay"></span>au PAY
+                            </label>
+                            <label class="chip checked" data-pay="merpay">
+                                <input type="checkbox" checked value="merpay">
+                                <span class="pay-dot merpay"></span>メルペイ
+                            </label>
+                            <label class="chip checked" data-pay="aeonpay">
+                                <input type="checkbox" checked value="aeonpay">
+                                <span class="pay-dot aeonpay"></span>イオンPay
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="input-group">
+                        <label for="category-filter">カテゴリ絞り込み</label>
+                        <select id="category-filter">
+                            <option value="all">すべて表示</option>
+                            <option value="convenience">コンビニ</option>
+                            <option value="supermarket">スーパー・ドラッグストア</option>
+                            <option value="restaurant">飲食店・カフェ</option>
+                            <option value="appliance">家電・量販店</option>
+                        </select>
+                    </div>
+
+                    <button id="btn-gps" class="btn-primary">
+                        <span class="icon">📍</span> 現在地付近を検索
+                    </button>
+                </section>
+
+                <!-- Active Campaigns Banner -->
+                <section class="card campaign-notice">
+                    <div class="campaign-header">
+                        <span class="sparkle">✨</span>
+                        <h3>現在検出されたお得情報</h3>
+                    </div>
+                    <ul id="active-campaigns-list">
+                        <li><strong class="highlight-city">東京都渋谷区</strong> 自治体還元コラボ（PayPay / d払い 20%還元中）</li>
+                        <li><strong class="highlight-store">ドラッグストア全店</strong> 楽天ペイ ポイント5倍デー</li>
+                    </ul>
+                </section>
+            </aside>
+
+            <!-- Map & Results Section -->
+            <section class="results-area">
+                <!-- Map View -->
+                <div class="card map-card">
+                    <div class="map-header">
+                        <h2><span class="icon">🗺️</span> 対象店舗マップ</h2>
+                        <span class="map-hint">💡 地図上を直接クリックしても指定位置を変更できます</span>
+                    </div>
+                    <div id="map"></div>
+                </div>
+
+                <!-- Stores Ranking List -->
+                <div class="stores-container">
+                    <div class="section-title-bar">
+                        <h2><span class="icon">🏆</span> 周辺店舗のお得度ランキング</h2>
+                        <span class="store-count" id="store-count-label">0件の店舗</span>
+                    </div>
+
+                    <div id="store-list" class="store-list-grid">
+                        <!-- Dynamic Store Cards rendered by JavaScript -->
+                    </div>
+                </div>
+            </section>
+        </main>
+
+        <!-- Technical Architecture Footer -->
+        <footer class="tech-spec-footer">
+            <div class="tech-card">
+                <h3>💡 B案（ハイブリッド構成 PWA）の強み</h3>
+                <div class="tech-grid">
+                    <div class="tech-box">
+                        <h4>1. 3大プラットフォーム全対応</h4>
+                        <p>PCブラウザ・iPhone (iOS)・Androidの全端末で同じコードが動作。CORSエラー等の通信遮断もありません。</p>
+                    </div>
+                    <div class="tech-box">
+                        <h4>2. IPブロックリスクの完全回避</h4>
+                        <p>リアルタイムな多頻度スクレイピングを行わず、バックエンドで定期キャッシュを保持するためアクセス禁止になりません。</p>
+                    </div>
+                    <div class="tech-box">
+                        <h4>3. スマホのアプリ化 (PWA)</h4>
+                        <p>ホーム画面に追加することで、ブラウザ枠なしの全画面アプリとして動作し、オフラインキャッシュにも対応します。</p>
+                    </div>
+                </div>
+            </div>
+        </footer>
+    </div>
+
+    <!-- Leaflet JS -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+    <script src="app.js"></script>
+
+    <!-- Register Service Worker -->
+    <script>
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('./sw.js')
+                    .then(reg => console.log('[PWA] ServiceWorker registered with scope:', reg.scope))
+                    .catch(err => console.log('[PWA] ServiceWorker registration failed:', err));
+            });
+        }
+    </script>
+</body>
+</html>

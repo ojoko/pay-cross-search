@@ -1,0 +1,54 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "PayCrossDataPackage",
+  "type": "object",
+  "properties": {
+    "last_updated": {
+      "type": "string",
+      "format": "date-time",
+      "description": "データ同期日時 (ISO 8601)"
+    },
+    "sync_status": {
+      "type": "string",
+      "enum": ["success", "partial", "cached"],
+      "description": "サーバー同期ステータス"
+    },
+    "active_campaigns": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "campaign_id": { "type": "string" },
+          "title": { "type": "string" },
+          "target_pay": { "type": "string", "enum": ["paypay", "rakuten", "dbarai", "aupay", "merpay", "aeonpay"] },
+          "target_region": { "type": "string" },
+          "bonus_rate": { "type": "number", "minimum": 0, "maximum": 1.0 },
+          "max_per_txn": { "type": "integer" },
+          "start_date": { "type": "string" },
+          "end_date": { "type": "string" }
+        },
+        "required": ["campaign_id", "title", "target_pay", "bonus_rate"]
+      }
+    },
+    "stores": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "integer" },
+          "name": { "type": "string" },
+          "category": { "type": "string" },
+          "latitude": { "type": "number" },
+          "longitude": { "type": "number" },
+          "address": { "type": "string" },
+          "accepted_pays": {
+            "type": "array",
+            "items": { "type": "string" }
+          }
+        },
+        "required": ["id", "name", "category", "latitude", "longitude", "accepted_pays"]
+      }
+    }
+  },
+  "required": ["last_updated", "sync_status", "active_campaigns", "stores"]
+}

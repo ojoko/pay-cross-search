@@ -1,0 +1,40 @@
+{
+  "last_updated": "2026-07-24T18:21:00.994303+00:00",
+  "sync_status": "success",
+  "total_active_campaigns": 3,
+  "active_campaigns": [
+    {
+      "campaign_id": "paypay-live-ebina",
+      "title": "神奈川県海老名市 キャッシュレスポイント還元（最大20%）",
+      "target_pay": "paypay",
+      "target_region": "神奈川県海老名市",
+      "bonus_rate": 0.2,
+      "max_per_txn": 1000,
+      "max_per_period": 5000,
+      "start_date": "2026-07-01",
+      "end_date": "2026-08-31"
+    },
+    {
+      "campaign_id": "dbarai-live-ebina",
+      "title": "神奈川県海老名市 d払いで最大20%ポイント還元",
+      "target_pay": "dbarai",
+      "target_region": "神奈川県海老名市",
+      "bonus_rate": 0.2,
+      "max_per_txn": 1000,
+      "max_per_period": 5000,
+      "start_date": "2026-07-01",
+      "end_date": "2026-08-31"
+    },
+    {
+      "campaign_id": "aeonpay-live-group",
+      "title": "イオングループ対象店舗 AEON Pay利用でWAON POINT 10倍",
+      "target_pay": "aeonpay",
+      "target_region": "全国イオングループ店舗",
+      "bonus_rate": 0.05,
+      "max_per_txn": 2000,
+      "max_per_period": 10000,
+      "start_date": "2026-07-15",
+      "end_date": "2026-08-15"
+    }
+  ]
+}

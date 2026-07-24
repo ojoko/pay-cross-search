@@ -1,0 +1,29 @@
+name: Daily Campaign Data Sync
+
+on:
+  schedule:
+    # Runs daily at 18:00 UTC (03:00 AM JST)
+    - cron: '0 18 * * *'
+  workflow_dispatch: # Allows manual trigger from GitHub UI
+
+jobs:
+  sync-campaigns:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Run Production Live Campaign Crawler
+        run: python production_crawler.py
+
+      - name: Commit and Push Updated Campaign Data
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git add production_live_data.json
+          git diff --quiet && git diff --staged --quiet || (git commit -m "auto: update live campaign data [skip ci]" && git push)
