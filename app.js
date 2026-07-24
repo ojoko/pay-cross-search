@@ -253,22 +253,19 @@ function updateCenterPin(lat, lng, name) {
     centerMarker.bindPopup(`<strong style="color: #fbbf24;">検索基準地: ${name}</strong>`).openPopup();
 }
 
-// Dynamically generate stores around any specified location
+// Dynamically generate stores around any specified location using fixed relative offsets
 function generateStoresAround(centerLat, centerLng, areaName) {
-    const templates = [
-        { name: 'セブン-イレブン', category: 'convenience', pays: ['paypay', 'rakuten', 'dbarai', 'aupay', 'merpay', 'aeonpay'], camp: { paypay: { rate: 0.20, name: '自治体20%還元中', maxPerTxn: 1000 } } },
-        { name: 'ローソン / ファミリーマート', category: 'convenience', pays: ['paypay', 'dbarai', 'aupay', 'rakuten', 'aeonpay'], camp: { dbarai: { rate: 0.20, name: '自治体20%還元中', maxPerTxn: 1000 } } },
-        { name: 'マツモトキヨシ / ウエルシア', category: 'supermarket', pays: ['paypay', 'rakuten', 'dbarai', 'aupay', 'merpay', 'aeonpay'], camp: { rakuten: { rate: 0.05, name: 'P5倍デー', maxPerTxn: 500 }, paypay: { rate: 0.20, name: '自治体20%還元中', maxPerTxn: 1000 } } },
-        { name: '吉野家 / すき家 / 松屋', category: 'restaurant', pays: ['paypay', 'dbarai', 'aupay', 'merpay', 'aeonpay'], camp: { merpay: { rate: 0.10, name: '飲食10%還元', maxPerTxn: 300 }, paypay: { rate: 0.20, name: '自治体20%還元中', maxPerTxn: 1000 } } },
-        { name: 'スターバックス / ドトール', category: 'restaurant', pays: ['paypay', 'dbarai', 'rakuten', 'aeonpay'], camp: { dbarai: { rate: 0.20, name: '自治体20%還元中', maxPerTxn: 1000 } } },
-        { name: 'ヤマダデンキ / ノジマ', category: 'appliance', pays: ['paypay', 'rakuten', 'dbarai', 'aupay', 'aeonpay'], camp: { paypay: { rate: 0.15, name: '家電ポイント還元', maxPerTxn: 2000 } } },
-        { name: 'イオンモール / イオンスーパー', category: 'supermarket', pays: ['aeonpay', 'paypay', 'rakuten', 'dbarai', 'aupay'], camp: { aeonpay: { rate: 0.10, name: 'イオンP10倍', maxPerTxn: 1500 }, paypay: { rate: 0.20, name: '自治体20%還元中', maxPerTxn: 1000 } } }
+    const storeOffsets = [
+        { name: 'セブン-イレブン', category: 'convenience', dLat: 0.0012, dLng: 0.0015, pays: ['paypay', 'rakuten', 'dbarai', 'aupay', 'merpay', 'aeonpay'], camp: { paypay: { rate: 0.20, name: '自治体20%還元中', maxPerTxn: 1000 } } },
+        { name: 'ローソン / ファミリーマート', category: 'convenience', dLat: -0.0015, dLng: 0.0020, pays: ['paypay', 'dbarai', 'aupay', 'rakuten', 'aeonpay'], camp: { dbarai: { rate: 0.20, name: '自治体20%還元中', maxPerTxn: 1000 } } },
+        { name: 'マツモトキヨシ / ウエルシア', category: 'supermarket', dLat: 0.0025, dLng: -0.0010, pays: ['paypay', 'rakuten', 'dbarai', 'aupay', 'merpay', 'aeonpay'], camp: { rakuten: { rate: 0.05, name: 'P5倍デー', maxPerTxn: 500 }, paypay: { rate: 0.20, name: '自治体20%還元中', maxPerTxn: 1000 } } },
+        { name: '吉野家 / すき家 / 松屋', category: 'restaurant', dLat: -0.0008, dLng: -0.0018, pays: ['paypay', 'dbarai', 'aupay', 'merpay', 'aeonpay'], camp: { merpay: { rate: 0.10, name: '飲食10%還元', maxPerTxn: 300 }, paypay: { rate: 0.20, name: '自治体20%還元中', maxPerTxn: 1000 } } },
+        { name: 'スターバックス / ドトール', category: 'restaurant', dLat: 0.0005, dLng: 0.0008, pays: ['paypay', 'dbarai', 'rakuten', 'aeonpay'], camp: { dbarai: { rate: 0.20, name: '自治体20%還元中', maxPerTxn: 1000 } } },
+        { name: 'ヤマダデンキ / ノジマ', category: 'appliance', dLat: 0.0032, dLng: 0.0028, pays: ['paypay', 'rakuten', 'dbarai', 'aupay', 'aeonpay'], camp: { paypay: { rate: 0.15, name: '家電ポイント還元', maxPerTxn: 2000 } } },
+        { name: 'イオンモール / イオンスーパー', category: 'supermarket', dLat: -0.0028, dLng: -0.0030, pays: ['aeonpay', 'paypay', 'rakuten', 'dbarai', 'aupay'], camp: { aeonpay: { rate: 0.10, name: 'イオンP10倍', maxPerTxn: 1500 }, paypay: { rate: 0.20, name: '自治体20%還元中', maxPerTxn: 1000 } } }
     ];
 
-    activeStoresDB = templates.map((tmpl, idx) => {
-        const offsetLat = (Math.random() - 0.5) * 0.012;
-        const offsetLng = (Math.random() - 0.5) * 0.014;
-        
+    activeStoresDB = storeOffsets.map((tmpl, idx) => {
         return {
             id: idx + 100,
             name: `${tmpl.name} ${areaName}店`,
