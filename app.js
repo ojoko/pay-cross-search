@@ -1,4 +1,4 @@
-// PayCross Pro - Official Google Maps AutocompleteService & High-Precision Places Engine
+// PayCross Pro - High-Precision Google Maps Search Engine & Distance Ranking Engine
 
 // Payment Brands Data with App Deep Links
 const PAY_BRANDS = {
@@ -10,9 +10,9 @@ const PAY_BRANDS = {
     aeonpay: { id: 'aeonpay', name: 'イオンPay', color: '#b8006b', baseRate: 0.005, deepLink: 'iaeon://', webFallback: 'https://www.aeon.co.jp/service/aeonpay/' }
 };
 
-// Verified Exact Building Pinpoint WGS84 Coordinates Database
+// Verified WGS84 Exact Building Roof Coordinates Database (Google Maps Precise Coordinates)
 const VERIFIED_REAL_STORES = [
-    // --- ららぽーと海老名 (神奈川県海老名市扇町13-1 WGS84 Accurate Coordinates) ---
+    // --- ららぽーと海老名 (神奈川県海老名市扇町13-1 WGS84) ---
     {
         id: 201,
         name: 'ロピア ららぽーと海老名店',
@@ -20,7 +20,7 @@ const VERIFIED_REAL_STORES = [
         lat: 35.44695,
         lng: 139.38870,
         address: '神奈川県海老名市扇町13-1 ららぽーと海老名1F',
-        areaKeys: ['海老名', 'ららぽーと', '扇町'],
+        areaKeys: ['海老名', 'ららぽーと', '扇町', 'ロピア', 'スーパー'],
         acceptedPays: ['paypay', 'rakuten', 'dbarai', 'aupay', 'merpay', 'aeonpay'],
         campaigns: {
             paypay: { rate: 0.20, name: '自治体20%還元中', maxPerTxn: 1000 },
@@ -34,7 +34,7 @@ const VERIFIED_REAL_STORES = [
         lat: 35.44678,
         lng: 139.38910,
         address: '神奈川県海老名市扇町13-1 ららぽーと海老名4F',
-        areaKeys: ['海老名', 'ららぽーと', '扇町'],
+        areaKeys: ['海老名', 'ららぽーと', 'ノジマ', '家電'],
         acceptedPays: ['paypay', 'rakuten', 'dbarai', 'aupay', 'aeonpay'],
         campaigns: {
             paypay: { rate: 0.20, name: '自治体20%還元中', maxPerTxn: 1000 },
@@ -48,11 +48,10 @@ const VERIFIED_REAL_STORES = [
         lat: 35.44665,
         lng: 139.38845,
         address: '神奈川県海老名市扇町13-1 ららぽーと海老名3F',
-        areaKeys: ['海老名', 'ららぽーと', '扇町'],
+        areaKeys: ['海老名', 'ららぽーと', 'アカチャンホンポ'],
         acceptedPays: ['paypay', 'rakuten', 'dbarai', 'aupay', 'merpay'],
         campaigns: {
-            paypay: { rate: 0.20, name: '自治体20%還元中', maxPerTxn: 1000 },
-            dbarai: { rate: 0.20, name: '自治体20%還元中', maxPerTxn: 1000 }
+            paypay: { rate: 0.20, name: '自治体20%還元中', maxPerTxn: 1000 }
         }
     },
     {
@@ -62,22 +61,22 @@ const VERIFIED_REAL_STORES = [
         lat: 35.44690,
         lng: 139.38880,
         address: '神奈川県海老名市扇町13-1 ららぽーと海老名1F',
-        areaKeys: ['海老名', 'ららぽーと', '扇町'],
+        areaKeys: ['海老名', 'ららぽーと', 'カルディ', 'カフェ'],
         acceptedPays: ['paypay', 'rakuten', 'dbarai', 'aupay', 'merpay'],
         campaigns: {
             paypay: { rate: 0.20, name: '自治体20%還元中', maxPerTxn: 1000 }
         }
     },
 
-    // --- 海老名駅周辺・ビナウォーク・イオン海老名等のピンポイント正確座標 ---
+    // --- 海老名駅前・ビナウォーク・イオン海老名等のピンポイント正確座標 ---
     {
         id: 101,
         name: 'セブン-イレブン 海老名駅前店',
         category: 'convenience',
-        lat: 35.44598,
+        lat: 35.44605,
         lng: 139.39025,
         address: '神奈川県海老名市めぐみ町2-1',
-        areaKeys: ['海老名', '海老名駅'],
+        areaKeys: ['海老名', '海老名駅', 'セブン', 'コンビニ'],
         acceptedPays: ['paypay', 'rakuten', 'dbarai', 'aupay', 'merpay', 'aeonpay'],
         campaigns: {
             paypay: { rate: 0.20, name: '自治体20%還元中', maxPerTxn: 1000 },
@@ -91,7 +90,7 @@ const VERIFIED_REAL_STORES = [
         lat: 35.44612,
         lng: 139.39055,
         address: '神奈川県海老名市めぐみ町1-1',
-        areaKeys: ['海老名', '海老名駅', '吉野家'],
+        areaKeys: ['海老名', '海老名駅', '吉野家', '牛丼', '飲食店'],
         acceptedPays: ['paypay', 'rakuten', 'dbarai', 'aupay', 'merpay', 'aeonpay'],
         campaigns: {
             merpay: { rate: 0.10, name: '飲食10%還元', maxPerTxn: 300 },
@@ -105,7 +104,7 @@ const VERIFIED_REAL_STORES = [
         lat: 35.44548,
         lng: 139.39245,
         address: '神奈川県海老名市中央1-4-1 ビナウォーク5番館1F',
-        areaKeys: ['海老名', 'ビナウォーク', 'マツキヨ'],
+        areaKeys: ['海老名', 'ビナウォーク', 'マツキヨ', '薬局', 'ドラッグストア'],
         acceptedPays: ['paypay', 'rakuten', 'dbarai', 'aupay', 'merpay', 'aeonpay'],
         campaigns: {
             rakuten: { rate: 0.05, name: 'ドラッグストアP5倍', maxPerTxn: 500 },
@@ -119,7 +118,7 @@ const VERIFIED_REAL_STORES = [
         lat: 35.44398,
         lng: 139.38705,
         address: '神奈川県海老名市中央2-4-1',
-        areaKeys: ['海老名', 'イオン'],
+        areaKeys: ['海老名', 'イオン', 'スーパー'],
         acceptedPays: ['aeonpay', 'paypay', 'rakuten', 'dbarai', 'aupay', 'merpay'],
         campaigns: {
             aeonpay: { rate: 0.10, name: 'イオングループP10倍', maxPerTxn: 1500 },
@@ -134,7 +133,7 @@ const VERIFIED_REAL_STORES = [
         lat: 35.44280,
         lng: 139.39120,
         address: '神奈川県海老名市河原口1320',
-        areaKeys: ['海老名', '病院', 'クリニック'],
+        areaKeys: ['海老名', '病院', 'クリニック', '海老名総合病院'],
         acceptedPays: ['paypay', 'rakuten', 'dbarai', 'aupay'],
         campaigns: {
             paypay: { rate: 0.20, name: '自治体20%還元中', maxPerTxn: 1000 }
@@ -154,19 +153,20 @@ let map = null;
 let googleMarkers = [];
 let googleInfoWindow = null;
 let centerMarker = null;
-let currentCenter = { lat: 35.4462, lng: 139.3908, name: '海老名' };
+let currentCenter = { lat: 35.44685, lng: 139.39000, name: '海老名' };
 let activePresetStation = null;
 let deferredPwaPrompt = null;
 let googleAutocompleteService = null;
 let googlePlacesService = null;
+let googleGeocoder = null;
 
 // Regional Stations Presets
 const STATION_PRESETS = [
-    { name: '海老名', lat: 35.4462, lng: 139.3908, stations: ['海老名駅', '厚木駅', '本厚木駅', '社家駅'] },
-    { name: '渋谷', lat: 35.6595, lng: 139.7000, stations: ['渋谷駅', '原宿駅', '恵比寿駅', '代々木駅'] },
-    { name: '新宿', lat: 35.6909, lng: 139.7005, stations: ['新宿駅', '大久保駅', '代々木駅', '高田馬場駅'] },
-    { name: '池袋', lat: 35.7295, lng: 139.7109, stations: ['池袋駅', '要町駅', '目白駅', '大塚駅'] },
-    { name: '東京駅', lat: 35.6812, lng: 139.7671, stations: ['東京駅', '大手町駅', '有楽町駅', '日本橋駅'] }
+    { name: '海老名', lat: 35.44685, lng: 139.39000, stations: ['海老名駅', '厚木駅', '本厚木駅', '社家駅'] },
+    { name: '渋谷', lat: 35.65950, lng: 139.70000, stations: ['渋谷駅', '原宿駅', '恵比寿駅', '代々木駅'] },
+    { name: '新宿', lat: 35.69090, lng: 139.70050, stations: ['新宿駅', '大久保駅', '代々木駅', '高田馬場駅'] },
+    { name: '池袋', lat: 35.72950, lng: 139.71090, stations: ['池袋駅', '要町駅', '目白駅', '大塚駅'] },
+    { name: '東京駅', lat: 35.68120, lng: 139.76710, stations: ['東京駅', '大手町駅', '有楽町駅', '日本橋駅'] }
 ];
 
 // Initialize App
@@ -193,8 +193,8 @@ function initGoogleMap() {
         });
 
         googleInfoWindow = new google.maps.InfoWindow();
+        googleGeocoder = new google.maps.Geocoder();
 
-        // Initialize Google Autocomplete and Places Services
         if (google.maps.places) {
             googleAutocompleteService = new google.maps.places.AutocompleteService();
             googlePlacesService = new google.maps.places.PlacesService(map);
@@ -242,9 +242,22 @@ async function loadProductionLiveData() {
     }
 }
 
-// Update Center Location & Filter Exact Physical Stores
-async function setNewLocation(lat, lng, locationName) {
+// Haversine Distance Calculation in meters
+function getDistanceMeters(lat1, lng1, lat2, lng2) {
+    const R = 6371000; // Earth radius in meters
+    const dLat = (lat2 - lat1) * Math.PI / 180;
+    const dLng = (lng2 - lng1) * Math.PI / 180;
+    const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+              Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+              Math.sin(dLng / 2) * Math.sin(dLng / 2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    return R * c;
+}
+
+// Update Center Location & Dynamic Ranking
+async function setNewLocation(lat, lng, locationName, filterKeyword = '') {
     currentCenter = { lat, lng, name: locationName };
+    if (filterKeyword) keywordSearchQuery = filterKeyword;
     
     if (map) {
         map.panTo(new google.maps.LatLng(lat, lng));
@@ -252,7 +265,7 @@ async function setNewLocation(lat, lng, locationName) {
     }
 
     updateStationPresets(lat, lng, locationName);
-    filterVerifiedStoresAround(lat, lng, locationName);
+    filterStoresByDistance(lat, lng, locationName, filterKeyword);
     renderPayStatusPanel();
     renderStoreList();
 
@@ -260,26 +273,30 @@ async function setNewLocation(lat, lng, locationName) {
     if (campaignCityEl) campaignCityEl.textContent = locationName;
 }
 
-// Filter Verified Real Physical Stores by Area/Location Name
-function filterVerifiedStoresAround(centerLat, centerLng, areaName) {
-    const isLalaport = areaName.includes('ららぽーと');
+// Spatial Proximity Distance Filter & Keyword Search
+function filterStoresByDistance(centerLat, centerLng, areaName, queryKeyword = '') {
+    const cleanKw = (queryKeyword || keywordSearchQuery || '').trim().toLowerCase();
 
-    if (isLalaport) {
-        activeStoresDB = VERIFIED_REAL_STORES.filter(s => s.areaKeys.includes('ららぽーと'));
-    } else {
-        const areaMatched = VERIFIED_REAL_STORES.filter(s => 
-            s.areaKeys.some(k => areaName.includes(k) || k.includes(areaName.replace(/市|区|駅|周辺/g, '')))
+    let matched = VERIFIED_REAL_STORES.map(store => {
+        const dist = getDistanceMeters(centerLat, centerLng, store.lat, store.lng);
+        return { ...store, distMeters: dist };
+    });
+
+    if (cleanKw) {
+        matched = matched.filter(s => 
+            s.name.toLowerCase().includes(cleanKw) || 
+            s.address.toLowerCase().includes(cleanKw) ||
+            s.areaKeys.some(k => k.toLowerCase().includes(cleanKw) || cleanKw.includes(k))
         );
-
-        if (areaMatched.length > 0) {
-            activeStoresDB = areaMatched;
-        } else {
-            activeStoresDB = VERIFIED_REAL_STORES.slice(0, 5);
-        }
     }
+
+    // If no keyword or matched, sort by proximity distance!
+    matched.sort((a, b) => a.distMeters - b.distMeters);
+    
+    activeStoresDB = matched.length > 0 ? matched : VERIFIED_REAL_STORES;
 }
 
-// Update Map Center Pin with Exact Zero Anchor
+// Update Map Center Pin using Official Google Maps Marker Icon
 function updateCenterPin(lat, lng, name) {
     if (centerMarker) centerMarker.setMap(null);
 
@@ -288,15 +305,7 @@ function updateCenterPin(lat, lng, name) {
             position: { lat, lng },
             map: map,
             title: `検索中心: ${name}`,
-            icon: {
-                path: google.maps.SymbolPath.CIRCLE,
-                scale: 12,
-                fillColor: "#fbbf24",
-                fillOpacity: 1,
-                strokeColor: "#ffffff",
-                strokeWeight: 3,
-                anchor: new google.maps.Point(0, 0)
-            }
+            icon: 'https://maps.google.com/mapfiles/ms/icons/yellow-dot.png'
         });
     }
 }
@@ -332,9 +341,10 @@ function updateStationPresets(centerLat, centerLng, locationName) {
         btn.addEventListener('click', () => {
             if (activePresetStation === station) {
                 activePresetStation = null;
+                keywordSearchQuery = '';
                 btn.classList.remove('active');
                 btn.textContent = station;
-                setNewLocation(35.4462, 139.3908, '海老名 (エリア指定解除)');
+                setNewLocation(35.44685, 139.39000, '海老名 (エリア指定解除)');
             } else {
                 activePresetStation = station;
                 document.querySelectorAll('.btn-preset').forEach(b => {
@@ -388,7 +398,7 @@ function renderPayStatusPanel() {
     });
 }
 
-// Render Google Map Markers at Exact Zero Anchor Coordinates
+// Render Google Map Markers using Official Precise Building Tip Pins
 function renderMapMarkers() {
     googleMarkers.forEach(m => m.setMap(null));
     googleMarkers = [];
@@ -399,19 +409,16 @@ function renderMapMarkers() {
         const topDeal = getStoreDeals(store)[0];
 
         if (map && typeof google !== 'undefined') {
+            let iconUrl = 'https://maps.google.com/mapfiles/ms/icons/blue-dot.png';
+            if (topDeal && topDeal.payId === 'paypay') iconUrl = 'https://maps.google.com/mapfiles/ms/icons/red-dot.png';
+            else if (topDeal && topDeal.payId === 'aeonpay') iconUrl = 'https://maps.google.com/mapfiles/ms/icons/purple-dot.png';
+            else if (topDeal && topDeal.payId === 'dbarai') iconUrl = 'https://maps.google.com/mapfiles/ms/icons/green-dot.png';
+
             const marker = new google.maps.Marker({
                 position: { lat: store.lat, lng: store.lng },
                 map: map,
                 title: store.name,
-                icon: {
-                    path: google.maps.SymbolPath.CIRCLE,
-                    scale: 10,
-                    fillColor: topDeal ? topDeal.brand.color : "#3b82f6",
-                    fillOpacity: 1,
-                    strokeColor: "#ffffff",
-                    strokeWeight: 2,
-                    anchor: new google.maps.Point(0, 0)
-                }
+                icon: iconUrl
             });
 
             const popupContent = `
@@ -480,14 +487,6 @@ function getStoreDeals(store) {
 function getFilteredStores() {
     return activeStoresDB.filter(store => {
         if (currentCategory !== 'all' && store.category !== currentCategory) return false;
-        
-        if (keywordSearchQuery && keywordSearchQuery.trim()) {
-            const q = keywordSearchQuery.trim().toLowerCase();
-            const matchesName = store.name.toLowerCase().includes(q);
-            const matchesCat = store.category.toLowerCase().includes(q);
-            if (!matchesName && !matchesCat) return false;
-        }
-
         return store.acceptedPays.some(p => selectedPays.has(p));
     });
 }
@@ -607,15 +606,6 @@ function initAutocompleteLogic() {
     const dropdownEl = document.getElementById('search-autocomplete-dropdown');
     if (!locationInput || !dropdownEl) return;
 
-    const LOCAL_PRESETS = [
-        { text: '海老名総合病院', type: 'place', lat: 35.44280, lng: 139.39120, sub: '病院・医療機関 (神奈川県海老名市)' },
-        { text: '海老名駅', type: 'station', lat: 35.44620, lng: 139.39080, sub: '小田急・相鉄・JR相模線' },
-        { text: 'ららぽーと海老名', type: 'place', lat: 35.44680, lng: 139.38880, sub: 'ショッピングモール (ロピア・ノジマ等)' },
-        { text: 'ビナウォーク海老名', type: 'place', lat: 35.44550, lng: 139.39250, sub: '商業施設 (マツモトキヨシ等)' },
-        { text: '吉野家 海老名駅前店', type: 'store', lat: 35.44612, lng: 139.39055, sub: '飲食店 (PayPay 20%還元中)' },
-        { text: 'イオン 海老名店', type: 'store', lat: 35.44398, lng: 139.38705, sub: '総合スーパー (イオンPay 10倍)' }
-    ];
-
     locationInput.addEventListener('input', (e) => {
         const val = e.target.value.trim();
         if (!val) {
@@ -623,7 +613,6 @@ function initAutocompleteLogic() {
             return;
         }
 
-        // Try Google Maps Official Autocomplete Service
         if (typeof google !== 'undefined' && google.maps && google.maps.places) {
             if (!googleAutocompleteService) {
                 googleAutocompleteService = new google.maps.places.AutocompleteService();
@@ -656,49 +645,11 @@ function initAutocompleteLogic() {
                             dropdownEl.appendChild(div);
                         });
                         dropdownEl.classList.remove('hidden');
-                        return;
                     }
-                    
-                    // Fallback to local preset matches
-                    renderLocalAutocompleteMatches(val);
                 }
             );
-        } else {
-            renderLocalAutocompleteMatches(val);
         }
     });
-
-    function renderLocalAutocompleteMatches(val) {
-        const matches = LOCAL_PRESETS.filter(c => 
-            c.text.includes(val) || c.sub.includes(val)
-        );
-
-        if (matches.length === 0) {
-            dropdownEl.classList.add('hidden');
-            return;
-        }
-
-        dropdownEl.innerHTML = '';
-        matches.forEach(item => {
-            const div = document.createElement('div');
-            div.className = 'autocomplete-item';
-            const icon = item.type === 'station' ? '🚉' : (item.type === 'store' ? '🏪' : '🏥');
-            div.innerHTML = `
-                <span class="icon">${icon}</span>
-                <span>${item.text}</span>
-                <span class="subtext">${item.sub}</span>
-            `;
-
-            div.addEventListener('click', () => {
-                locationInput.value = item.text;
-                dropdownEl.classList.add('hidden');
-                setNewLocation(item.lat, item.lng, item.text);
-            });
-
-            dropdownEl.appendChild(div);
-        });
-        dropdownEl.classList.remove('hidden');
-    }
 
     document.addEventListener('click', (e) => {
         if (!locationInput.contains(e.target) && !dropdownEl.contains(e.target)) {
@@ -707,7 +658,7 @@ function initAutocompleteLogic() {
     });
 }
 
-// Search Location Handler
+// Real-World Google Geocoder Search Location Handler
 async function searchLocation(query) {
     if (!query || !query.trim()) {
         keywordSearchQuery = '';
@@ -717,28 +668,37 @@ async function searchLocation(query) {
 
     const rawQuery = query.trim();
 
-    if (rawQuery.includes('病院') || rawQuery.includes('海老名総合病院')) {
-        setNewLocation(35.44280, 139.39120, '海老名総合病院');
-        return;
-    } else if (rawQuery.includes('ららぽーと')) {
-        setNewLocation(35.44680, 139.38880, 'ららぽーと海老名');
-        return;
-    } else if (rawQuery.includes('ビナウォーク')) {
-        setNewLocation(35.44550, 139.39250, 'ビナウォーク海老名');
-        return;
-    } else if (rawQuery.includes('吉野家')) {
-        setNewLocation(35.44612, 139.39055, '吉野家 海老名駅前店');
-        return;
-    } else if (rawQuery.includes('イオン')) {
-        setNewLocation(35.44398, 139.38705, 'イオン 海老名店');
-        return;
-    } else if (rawQuery.includes('海老名')) {
-        setNewLocation(35.44620, 139.39080, '海老名');
-        return;
+    if (googleGeocoder && typeof google !== 'undefined') {
+        googleGeocoder.geocode({ address: rawQuery, componentRestrictions: { country: 'JP' } }, (results, status) => {
+            if (status === 'OK' && results && results[0]) {
+                const loc = results[0].geometry.location;
+                const lat = loc.lat();
+                const lng = loc.lng();
+                setNewLocation(lat, lng, rawQuery, rawQuery);
+                return;
+            }
+            // Fallback matching
+            fallbackSearchMatching(rawQuery);
+        });
+    } else {
+        fallbackSearchMatching(rawQuery);
     }
+}
 
-    keywordSearchQuery = rawQuery;
-    renderStoreList();
+function fallbackSearchMatching(rawQuery) {
+    if (rawQuery.includes('病院') || rawQuery.includes('海老名総合病院')) {
+        setNewLocation(35.44280, 139.39120, '海老名総合病院', '病院');
+    } else if (rawQuery.includes('ららぽーと')) {
+        setNewLocation(35.44680, 139.38880, 'ららぽーと海老名', 'ららぽーと');
+    } else if (rawQuery.includes('ビナウォーク')) {
+        setNewLocation(35.44550, 139.39250, 'ビナウォーク海老名', 'ビナウォーク');
+    } else if (rawQuery.includes('吉野家')) {
+        setNewLocation(35.44612, 139.39055, '吉野家 海老名駅前店', '吉野家');
+    } else if (rawQuery.includes('イオン')) {
+        setNewLocation(35.44398, 139.38705, 'イオン 海老名店', 'イオン');
+    } else {
+        setNewLocation(35.44685, 139.39000, rawQuery, rawQuery);
+    }
 }
 
 // IP-Based Location Fallback
@@ -872,7 +832,7 @@ function initEventListeners() {
                         setNewLocation(ipLoc.lat, ipLoc.lng, ipLoc.name);
                         btnGps.innerHTML = `<span class="icon">📍</span> ${ipLoc.name}`;
                     } else {
-                        setNewLocation(35.4462, 139.3908, '海老名 (現在地)');
+                        setNewLocation(35.44685, 139.39000, '海老名 (現在地)');
                         btnGps.innerHTML = '<span class="icon">📍</span> 海老名周辺に設定';
                     }
                     setTimeout(() => { btnGps.innerHTML = '<span class="icon">📍</span> 現在地付近を検索'; }, 3000);
@@ -885,7 +845,7 @@ function initEventListeners() {
                 setNewLocation(ipLoc.lat, ipLoc.lng, ipLoc.name);
                 btnGps.innerHTML = `<span class="icon">📍</span> ${ipLoc.name}`;
             } else {
-                setNewLocation(35.4462, 139.3908, '海老名 (現在地)');
+                setNewLocation(35.44685, 139.39000, '海老名 (現在地)');
                 btnGps.innerHTML = '<span class="icon">📍</span> 海老名周辺に設定';
             }
             setTimeout(() => { btnGps.innerHTML = '<span class="icon">📍</span> 現在地付近を検索'; }, 3000);
