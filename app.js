@@ -145,14 +145,14 @@ async function loadProductionLiveData() {
     }
 }
 
-// Initialize Leaflet Map
+// Initialize Map using Genuine Google Maps Tile Engine
 function initMap() {
-    map = L.map('map').setView([currentCenter.lat, currentCenter.lng], 15);
+    map = L.map('map').setView([currentCenter.lat, currentCenter.lng], 16);
 
-    L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
-        attribution: '&copy; OpenStreetMap &copy; CARTO',
-        subdomains: 'abcd',
-        maxZoom: 19
+    // Genuine Google Maps Vector Tile Layer
+    L.tileLayer('https://mt1.google.com/vt/lyrs=m&x={x}&y={y}&z={z}', {
+        attribution: '&copy; Google Maps',
+        maxZoom: 20
     }).addTo(map);
 
     updateCenterPin(currentCenter.lat, currentCenter.lng, currentCenter.name);
