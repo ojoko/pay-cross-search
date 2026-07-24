@@ -543,76 +543,81 @@ function scrollToStoreCard(storeId) {
     }
 }
 
-// Smart Geocoding / Keyword Search Logic
+// Smart Google Maps-like Multi-Engine Search Logic (Location + Store Keyword)
 async function searchLocation(query) {
     if (!query || !query.trim()) {
         keywordSearchQuery = '';
         renderStoreList();
         return;
     }
-    const cleanQuery = query.trim();
 
-    // Check if query is a store / brand / category keyword (e.g. "コンビニ", "吉野家", "すき家", "カフェ", "ドラッグストア", "スーパー", "セブン", "マツキヨ", "イオン", "ビックカメラ")
-    const storeKeywords = ['コンビニ', '吉野家', 'すき家', '松屋', 'カフェ', 'スタバ', 'ドラッグストア', '薬局', 'スーパー', 'セブン', 'ローソン', 'ファミマ', 'マツキヨ', 'ウエルシア', 'イオン', '家電', 'ビックカメラ', 'ヤマダ'];
-    
-    const isStoreKeyword = storeKeywords.some(k => cleanQuery.includes(k));
+    const rawQuery = query.trim();
+    // Normalize spaces (e.g. "海老名 吉野家" -> ["海老名", "吉野家"])
+    const tokens = rawQuery.split(/[\s　]+/);
 
-    if (isStoreKeyword) {
-        // Keep current map center (e.g. Ebina or GPS location), filter stores matching keyword around current location!
-        keywordSearchQuery = cleanQuery;
-        renderStoreList();
-
-        // Scroll to stores container
-        const storeContainer = document.querySelector('.stores-container');
-        if (storeContainer) storeContainer.scrollIntoView({ behavior: 'smooth', block: 'start' });
-        return;
-    }
-
-    // Otherwise, treat query as a Geographic Location / Station name!
-    keywordSearchQuery = '';
-
-    const locationDict = {
+    // Expanded High-Accuracy Japanese Places & Landmarks Dictionary
+    const JAPAN_PLACES_DICT = {
         '海老名': { lat: 35.4462, lng: 139.3908 },
-        '海老名市': { lat: 35.4462, lng: 139.3908 },
-        '海老名駅': { lat: 35.4462, lng: 139.3908 },
+        'ららぽーと海老名': { lat: 35.4468, lng: 139.3888 },
+        'ビナウォーク': { lat: 35.4455, lng: 139.3925 },
         '厚木': { lat: 35.4430, lng: 139.3660 },
         '本厚木': { lat: 35.4390, lng: 139.3640 },
+        '町田': { lat: 35.5420, lng: 139.4450 },
+        '相模原': { lat: 35.5712, lng: 139.3731 },
+        '横浜': { lat: 35.4658, lng: 139.6223 },
+        '川崎': { lat: 35.5308, lng: 139.7029 },
+        '藤沢': { lat: 35.3388, lng: 139.4888 },
+        '平塚': { lat: 35.3278, lng: 139.3494 },
         '渋谷': { lat: 35.6595, lng: 139.7000 },
         '新宿': { lat: 35.6909, lng: 139.7005 },
         '池袋': { lat: 35.7295, lng: 139.7109 },
         '東京': { lat: 35.6812, lng: 139.7671 },
-        '東京駅': { lat: 35.6812, lng: 139.7671 },
-        '品川': { lat: 35.6284, lng: 139.7387 },
-        '横浜': { lat: 35.4658, lng: 139.6223 },
         '難波': { lat: 34.6654, lng: 135.5013 },
-        '梅田': { lat: 34.7025, lng: 135.4959 },
-        '名古屋': { lat: 35.1709, lng: 136.8815 },
-        '博多': { lat: 33.5902, lng: 130.4207 },
-        '札幌': { lat: 43.0687, lng: 141.3508 }
+        '梅田': { lat: 34.7025, lng: 135.4959 }
     };
 
-    for (const key in locationDict) {
-        if (cleanQuery.includes(key)) {
-            setNewLocation(locationDict[key].lat, locationDict[key].lng, cleanQuery);
-            return;
+    let targetLocation = null;
+    let targetKeyword = '';
+
+    // Parse location token vs store keyword token
+    for (const token of tokens) {
+        let matched = false;
+        for (const placeName in JAPAN_PLACES_DICT) {
+            if (token.includes(placeName) || placeName.includes(token)) {
+                targetLocation = { ...JAPAN_PLACES_DICT[placeName], name: token };
+                matched = true;
+                break;
+            }
+        }
+        if (!matched) {
+            targetKeyword += (targetKeyword ? ' ' : '') + token;
         }
     }
 
+    // Set keyword search filter
+    keywordSearchQuery = targetKeyword;
+
+    // If location was found in fast dictionary, pan map immediately!
+    if (targetLocation) {
+        setNewLocation(targetLocation.lat, targetLocation.lng, targetLocation.name);
+        return;
+    }
+
+    // Otherwise, call Nominatim API for general Japanese address / landmark search
     try {
-        const response = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(cleanQuery)}&countrycodes=jp`);
+        const searchUrl = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(rawQuery)}&countrycodes=jp&addressdetails=1&limit=1`;
+        const response = await fetch(searchUrl);
         const data = await response.json();
 
         if (data && data.length > 0) {
             const first = data[0];
-            setNewLocation(parseFloat(first.lat), parseFloat(first.lon), cleanQuery);
+            setNewLocation(parseFloat(first.lat), parseFloat(first.lon), rawQuery);
         } else {
-            // Treat as keyword search around current location if geocoding fails
-            keywordSearchQuery = cleanQuery;
+            // Fallback: search store keyword around current center
             renderStoreList();
         }
     } catch (err) {
         console.error('Geocoding error:', err);
-        keywordSearchQuery = cleanQuery;
         renderStoreList();
     }
 }
