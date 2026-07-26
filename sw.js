@@ -1,6 +1,6 @@
 // PayCross Pro - Robust Production Service Worker
 const CACHE_PREFIX = 'paycross-v2-cache-';
-const CACHE_NAME = `${CACHE_PREFIX}static-v1`;
+const CACHE_NAME = `${CACHE_PREFIX}static-v2`;
 const DATA_CACHE_NAME = `${CACHE_PREFIX}data-v1`;
 
 const STATIC_ASSETS = [

@@ -271,10 +271,9 @@ function mergeLiveCampaignsIntoStores() {
     renderStoreListDebounced();
 }
 
-// Fetch Real Physical Stores Dynamically Around Location
+// Fetch Real Physical Stores Dynamically Around Location (Japan-Wide)
 async function fetchDynamicPlacesAround(centerLat, centerLng, locationName) {
     try {
-        // Query OpenStreetMap Nominatim POI API for real physical stores around coordinates
         const queryUrl = `https://nominatim.openstreetmap.org/search?format=json&q=shop+store+restaurant+near+${centerLat},${centerLng}&countrycodes=jp&addressdetails=1&limit=25`;
         const res = await fetch(queryUrl);
         if (res.ok) {
@@ -316,7 +315,6 @@ async function fetchDynamicPlacesAround(centerLat, centerLng, locationName) {
                     };
                 });
 
-                // Combine verified base stores and dynamic fetched stores
                 masterStoresList = [...VERIFIED_REAL_STORES, ...dynamicStores];
                 mergeLiveCampaignsIntoStores();
                 return;
@@ -366,7 +364,6 @@ async function setNewLocation(lat, lng, locationName, filterKeyword = '') {
 
     updateStationPresets(lat, lng, locationName);
     
-    // Fetch dynamic stores around new location if outside Ebina
     if (!locationName.includes('海老名')) {
         await fetchDynamicPlacesAround(lat, lng, locationName);
     }
@@ -401,7 +398,6 @@ function filterStoresByDistance(centerLat, centerLng, areaName, queryKeyword = '
         return;
     }
 
-    // Sort primarily by Best Deal reward points (descending), secondarily by Distance (ascending)
     matched.sort((a, b) => {
         const topA = getStoreDeals(a)[0]?.rewardAmount || 0;
         const topB = getStoreDeals(b)[0]?.rewardAmount || 0;
