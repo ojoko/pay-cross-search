@@ -925,27 +925,28 @@ function initEventListeners() {
         });
     }
 
-    // Clean Button Chip Toggle Handlers (No raw checkboxes required!)
-    if (payChipsGroup) {
-        payChipsGroup.addEventListener('click', (e) => {
-            const chipBtn = e.target.closest('.chip');
-            if (chipBtn) {
-                const payId = chipBtn.dataset.pay;
-                const isChecked = chipBtn.classList.contains('checked');
+    // Direct 100% Reliable Pay Chip Toggle Button Click Handler
+    const chipButtons = document.querySelectorAll('.chip[data-pay]');
+    chipButtons.forEach(chipBtn => {
+        chipBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
 
-                if (isChecked) {
-                    selectedPays.delete(payId);
-                    chipBtn.classList.remove('checked');
-                } else {
-                    selectedPays.add(payId);
-                    chipBtn.classList.add('checked');
-                }
+            const payId = chipBtn.dataset.pay;
+            const isChecked = chipBtn.classList.contains('checked');
 
-                renderPayStatusPanel();
-                renderStoreListDebounced();
+            if (isChecked) {
+                selectedPays.delete(payId);
+                chipBtn.classList.remove('checked');
+            } else {
+                selectedPays.add(payId);
+                chipBtn.classList.add('checked');
             }
+
+            renderPayStatusPanel();
+            renderStoreListDebounced();
         });
-    }
+    });
 
     // Amount Input Clamping with Number.isFinite
     if (amountInput && amountSlider) {
