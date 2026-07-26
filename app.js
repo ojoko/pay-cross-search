@@ -925,20 +925,20 @@ function initEventListeners() {
         });
     }
 
-    // Fix Checkbox Double-Toggle Bug by listening on 'change' event!
+    // Clean Button Chip Toggle Handlers (No raw checkboxes required!)
     if (payChipsGroup) {
-        payChipsGroup.addEventListener('change', (e) => {
-            if (e.target && e.target.matches('input[type="checkbox"]')) {
-                const checkbox = e.target;
-                const payId = checkbox.value;
-                const label = checkbox.closest('.chip');
+        payChipsGroup.addEventListener('click', (e) => {
+            const chipBtn = e.target.closest('.chip');
+            if (chipBtn) {
+                const payId = chipBtn.dataset.pay;
+                const isChecked = chipBtn.classList.contains('checked');
 
-                if (checkbox.checked) {
-                    selectedPays.add(payId);
-                    if (label) label.classList.add('checked');
-                } else {
+                if (isChecked) {
                     selectedPays.delete(payId);
-                    if (label) label.classList.remove('checked');
+                    chipBtn.classList.remove('checked');
+                } else {
+                    selectedPays.add(payId);
+                    chipBtn.classList.add('checked');
                 }
 
                 renderPayStatusPanel();
