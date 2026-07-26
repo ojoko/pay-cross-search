@@ -164,14 +164,55 @@ let currentCenter = { lat: 35.44685, lng: 139.39000, name: '海老名' };
 let activePresetStation = null;
 let deferredPwaPrompt = null;
 let renderDebounceTimer = null;
+let activeGeocodeController = null;
 
 // Regional Stations Presets
 const STATION_PRESETS = [
-    { name: '海老名', lat: 35.44685, lng: 139.39000, stations: ['海老名駅', '厚木駅', '本厚木駅', '社家駅'] },
-    { name: '渋谷', lat: 35.65950, lng: 139.70000, stations: ['渋谷駅', '原宿駅', '恵比寿駅', '代々木駅'] },
-    { name: '新宿', lat: 35.69090, lng: 139.70050, stations: ['新宿駅', '大久保駅', '代々木駅', '高田馬場駅'] },
-    { name: '池袋', lat: 35.72950, lng: 139.71090, stations: ['池袋駅', '要町駅', '目白駅', '大塚駅'] },
-    { name: '東京駅', lat: 35.68120, lng: 139.76710, stations: ['東京駅', '大手町駅', '有楽町駅', '日本橋駅'] }
+    {
+        name: '海老名',
+        stations: [
+            { name: '海老名駅', query: '海老名駅 神奈川県海老名市' },
+            { name: '厚木駅', query: '厚木駅 神奈川県海老名市' },
+            { name: '本厚木駅', query: '本厚木駅 神奈川県厚木市' },
+            { name: '社家駅', query: '社家駅 神奈川県海老名市' }
+        ]
+    },
+    {
+        name: '渋谷',
+        stations: [
+            { name: '渋谷駅', query: '渋谷駅 東京都渋谷区' },
+            { name: '原宿駅', query: '原宿駅 東京都渋谷区' },
+            { name: '恵比寿駅', query: '恵比寿駅 東京都渋谷区' },
+            { name: '代々木駅', query: '代々木駅 東京都渋谷区' }
+        ]
+    },
+    {
+        name: '新宿',
+        stations: [
+            { name: '新宿駅', query: '新宿駅 東京都新宿区' },
+            { name: '大久保駅', query: '大久保駅 東京都新宿区' },
+            { name: '代々木駅', query: '代々木駅 東京都渋谷区' },
+            { name: '高田馬場駅', query: '高田馬場駅 東京都新宿区' }
+        ]
+    },
+    {
+        name: '池袋',
+        stations: [
+            { name: '池袋駅', query: '池袋駅 東京都豊島区' },
+            { name: '要町駅', query: '要町駅 東京都豊島区' },
+            { name: '目白駅', query: '目白駅 東京都豊島区' },
+            { name: '大塚駅', query: '大塚駅 東京都豊島区' }
+        ]
+    },
+    {
+        name: '東京駅',
+        stations: [
+            { name: '東京駅', query: '東京駅 東京都千代田区' },
+            { name: '大手町駅', query: '大手町駅 東京都千代田区' },
+            { name: '有楽町駅', query: '有楽町駅 東京都千代田区' },
+            { name: '日本橋駅', query: '日本橋駅 東京都中央区' }
+        ]
+    }
 ];
 
 // Initialize App
@@ -298,10 +339,14 @@ function getDistanceMeters(lat1, lng1, lat2, lng2) {
 // Update Center Location & Dynamic Ranking
 async function setNewLocation(lat, lng, locationName, filterKeyword = '') {
     currentCenter = { lat, lng, name: locationName };
-    if (filterKeyword) keywordSearchQuery = filterKeyword;
+    keywordSearchQuery = filterKeyword;
     
     const locationTagEl = document.getElementById('current-location-name');
-    if (locationTagEl) locationTagEl.textContent = locationName;
+    if (locationTagEl) {
+        locationTagEl.textContent = locationName;
+        locationTagEl.dataset.lat = String(lat);
+        locationTagEl.dataset.lng = String(lng);
+    }
 
     if (leafletMap) {
         leafletMap.flyTo([lat, lng], 16, { duration: 0.8 });
@@ -395,38 +440,45 @@ function updateStationPresets(centerLat, centerLng, locationName) {
     } else {
         const cleanName = locationName.replace(/駅|市|区|町|村|\(.*\)/g, '');
         stationsToDisplay = [
-            `${cleanName}駅`,
-            `${cleanName}北口`,
-            `${cleanName}南口`,
-            `${cleanName}周辺`
+            { name: `${cleanName}駅`, query: `${cleanName}駅 日本` },
+            { name: `${cleanName}北口`, query: `${cleanName}北口 日本` },
+            { name: `${cleanName}南口`, query: `${cleanName}南口 日本` },
+            { name: `${cleanName}周辺`, query: `${cleanName} 日本` }
         ];
     }
 
-    stationsToDisplay.forEach((station, idx) => {
+    stationsToDisplay.forEach((station) => {
         const btn = document.createElement('button');
-        const isSelected = activePresetStation === station;
+        const isSelected = activePresetStation === station.name;
         btn.className = `btn-preset ${isSelected ? 'active' : ''}`;
-        btn.textContent = isSelected ? `✓ ${station}` : station;
+        btn.textContent = isSelected ? `✓ ${station.name}` : station.name;
 
-        btn.addEventListener('click', () => {
-            if (activePresetStation === station) {
+        btn.addEventListener('click', async () => {
+            if (activePresetStation === station.name) {
                 activePresetStation = null;
                 keywordSearchQuery = '';
                 btn.classList.remove('active');
-                btn.textContent = station;
+                btn.textContent = station.name;
                 setNewLocation(35.44685, 139.39000, '海老名 (エリア指定解除)');
             } else {
-                activePresetStation = station;
+                activePresetStation = station.name;
                 document.querySelectorAll('.btn-preset').forEach(b => {
                     b.classList.remove('active');
                     b.textContent = b.textContent.replace('✓ ', '');
                 });
                 btn.classList.add('active');
-                btn.textContent = `✓ ${station}`;
+                btn.textContent = `⌛ ${station.name}`;
 
-                const offsetLat = (idx - 1) * 0.002;
-                const offsetLng = (idx - 1) * 0.002;
-                setNewLocation(centerLat + offsetLat, centerLng + offsetLng, station);
+                const found = await searchLocation(station.query, {
+                    displayName: station.name,
+                    filterKeyword: ''
+                });
+
+                btn.textContent = found ? `✓ ${station.name}` : station.name;
+                if (!found) {
+                    activePresetStation = null;
+                    btn.classList.remove('active');
+                }
             }
         });
         container.appendChild(btn);
@@ -766,10 +818,13 @@ function initAutocompleteLogic() {
                 <span class="subtext">${escapeHTML(item.sub)}</span>
             `;
 
-            div.addEventListener('click', () => {
+            div.addEventListener('click', async () => {
                 locationInput.value = item.text;
                 dropdownEl.classList.add('hidden');
-                setNewLocation(item.lat, item.lng, item.text, item.text);
+                await searchLocation(item.text, {
+                    displayName: item.text,
+                    filterKeyword: item.text
+                });
             });
 
             dropdownEl.appendChild(div);
@@ -784,28 +839,117 @@ function initAutocompleteLogic() {
     });
 }
 
+// Resolve a user-entered place to WGS84 coordinates via OpenStreetMap Nominatim.
+async function geocodeLocation(query) {
+    if (activeGeocodeController) activeGeocodeController.abort();
+    const controller = new AbortController();
+    activeGeocodeController = controller;
+    const timeoutId = setTimeout(() => controller.abort(), 8000);
+
+    try {
+        const params = new URLSearchParams({
+            q: query,
+            format: 'jsonv2',
+            limit: '1',
+            countrycodes: 'jp',
+            'accept-language': 'ja'
+        });
+        const res = await fetch(`https://nominatim.openstreetmap.org/search?${params}`, {
+            signal: controller.signal,
+            headers: { Accept: 'application/json' }
+        });
+
+        if (!res.ok) throw new Error(`Geocoding failed with HTTP ${res.status}`);
+        const results = await res.json();
+        if (!Array.isArray(results) || results.length === 0) return null;
+
+        const lat = Number(results[0].lat);
+        const lng = Number(results[0].lon);
+        if (!Number.isFinite(lat) || !Number.isFinite(lng)) return null;
+        if (lat < -90 || lat > 90 || lng < -180 || lng > 180) return null;
+
+        return {
+            lat,
+            lng,
+            displayName: results[0].display_name || query
+        };
+    } finally {
+        clearTimeout(timeoutId);
+        if (activeGeocodeController === controller) {
+            activeGeocodeController = null;
+        }
+    }
+}
+
+function findKnownLocation(query) {
+    const normalized = query.trim().toLowerCase();
+    const candidates = [
+        { text: '海老名総合病院', lat: 35.44280, lng: 139.39120 },
+        { text: '海老名駅', lat: 35.44685, lng: 139.39000 },
+        { text: 'ららぽーと海老名', lat: 35.44680, lng: 139.38880 },
+        { text: 'ビナウォーク海老名', lat: 35.44550, lng: 139.39250 },
+        { text: '吉野家 海老名駅前店', lat: 35.44612, lng: 139.39055 },
+        { text: 'イオン 海老名店', lat: 35.44398, lng: 139.38705 },
+        { text: 'ロピア ららぽーと海老名店', lat: 35.44695, lng: 139.38870 },
+        { text: 'ノジマ ららぽーと海老名店', lat: 35.44678, lng: 139.38910 }
+    ];
+    return candidates.find(c =>
+        c.text.toLowerCase() === normalized ||
+        normalized.includes(c.text.toLowerCase())
+    ) || null;
+}
+
 // Search Location Handler
-async function searchLocation(query) {
+async function searchLocation(query, options = {}) {
     if (!query || !query.trim()) {
         keywordSearchQuery = '';
         renderStoreListDebounced();
-        return;
+        return false;
     }
 
     const rawQuery = query.trim();
+    const announceEl = document.getElementById('accessibility-status');
+    if (announceEl) announceEl.textContent = `${rawQuery} の位置を検索しています。`;
 
-    if (rawQuery.includes('病院') || rawQuery.includes('海老名総合病院')) {
-        setNewLocation(35.44280, 139.39120, '海老名総合病院', '病院');
-    } else if (rawQuery.includes('ららぽーと')) {
-        setNewLocation(35.44680, 139.38880, 'ららぽーと海老名', 'ららぽーと');
-    } else if (rawQuery.includes('ビナウォーク')) {
-        setNewLocation(35.44550, 139.39250, 'ビナウォーク海老名', 'ビナウォーク');
-    } else if (rawQuery.includes('吉野家')) {
-        setNewLocation(35.44612, 139.39055, '吉野家 海老名駅前店', '吉野家');
-    } else if (rawQuery.includes('イオン')) {
-        setNewLocation(35.44398, 139.38705, 'イオン 海老名店', 'イオン');
-    } else {
-        setNewLocation(35.44685, 139.39000, rawQuery, rawQuery);
+    try {
+        const result = await geocodeLocation(rawQuery);
+        const fallback = result ? null : findKnownLocation(rawQuery);
+        const location = result || fallback;
+
+        if (!location) {
+            if (announceEl) announceEl.textContent = `${rawQuery} の位置が見つかりませんでした。`;
+            return false;
+        }
+
+        const displayName = options.displayName || rawQuery;
+        const hasFilterKeyword = Object.prototype.hasOwnProperty.call(options, 'filterKeyword');
+        const filterKeyword = hasFilterKeyword
+            ? options.filterKeyword
+            : rawQuery;
+        setNewLocation(location.lat, location.lng, displayName, filterKeyword);
+        return true;
+    } catch (error) {
+        if (error.name !== 'AbortError') {
+            console.warn('[Location Search] Geocoding failed:', error);
+        }
+
+        const fallback = findKnownLocation(rawQuery);
+        if (fallback) {
+            setNewLocation(
+                fallback.lat,
+                fallback.lng,
+                options.displayName || fallback.text,
+                Object.prototype.hasOwnProperty.call(options, 'filterKeyword')
+                    ? options.filterKeyword
+                    : rawQuery
+            );
+            return true;
+        }
+
+        if (announceEl) {
+            announceEl.textContent = `${rawQuery} の位置を取得できませんでした。通信状態を確認してください。`;
+        }
+        return false;
     }
 }
 
