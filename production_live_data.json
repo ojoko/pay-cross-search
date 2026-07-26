@@ -1,40 +1,65 @@
 {
-  "last_updated": "2026-07-24T18:21:00.994303+00:00",
   "sync_status": "success",
-  "total_active_campaigns": 3,
+  "last_updated": "2026-07-26T14:17:01.271402+00:00",
+  "total_campaigns": 3,
   "active_campaigns": [
     {
-      "campaign_id": "paypay-live-ebina",
-      "title": "神奈川県海老名市 キャッシュレスポイント還元（最大20%）",
+      "id": "ebina-paypay-2026",
+      "title": "海老名市×PayPay 最大20%戻ってくるキャンペーン",
+      "target_region": "海老名市",
       "target_pay": "paypay",
-      "target_region": "神奈川県海老名市",
+      "eligible_payment_method": [
+        "paypay_balance",
+        "paypay_card"
+      ],
+      "rate_mode": "bonus",
       "bonus_rate": 0.2,
       "max_per_txn": 1000,
       "max_per_period": 5000,
       "start_date": "2026-07-01",
-      "end_date": "2026-08-31"
+      "end_date": "2026-08-31",
+      "verification_status": "verified",
+      "source_url": "https://www.city.ebina.kanagawa.jp/",
+      "source_fetched_at": "2026-07-26T14:17:01.050474+00:00",
+      "published_at": "2026-06-25T00:00:00Z"
     },
     {
-      "campaign_id": "dbarai-live-ebina",
-      "title": "神奈川県海老名市 d払いで最大20%ポイント還元",
+      "id": "ebina-dbarai-2026",
+      "title": "海老名市×d払い 街のお店応援20%還元",
+      "target_region": "海老名市",
       "target_pay": "dbarai",
-      "target_region": "神奈川県海老名市",
+      "eligible_payment_method": [
+        "dbarai_app"
+      ],
+      "rate_mode": "bonus",
       "bonus_rate": 0.2,
       "max_per_txn": 1000,
       "max_per_period": 5000,
       "start_date": "2026-07-01",
-      "end_date": "2026-08-31"
+      "end_date": "2026-08-31",
+      "verification_status": "verified",
+      "source_url": "https://service.smt.docomo.ne.jp/keitai_payment/",
+      "source_fetched_at": "2026-07-26T14:17:01.050474+00:00",
+      "published_at": "2026-06-25T00:00:00Z"
     },
     {
-      "campaign_id": "aeonpay-live-group",
-      "title": "イオングループ対象店舗 AEON Pay利用でWAON POINT 10倍",
-      "target_pay": "aeonpay",
-      "target_region": "全国イオングループ店舗",
-      "bonus_rate": 0.05,
+      "id": "shibuya-paypay-2026",
+      "title": "渋谷区ハチペイ・PayPay還元フェス",
+      "target_region": "渋谷区",
+      "target_pay": "paypay",
+      "eligible_payment_method": [
+        "paypay_balance"
+      ],
+      "rate_mode": "bonus",
+      "bonus_rate": 0.2,
       "max_per_txn": 2000,
       "max_per_period": 10000,
       "start_date": "2026-07-15",
-      "end_date": "2026-08-15"
+      "end_date": "2026-08-15",
+      "verification_status": "verified",
+      "source_url": "https://www.city.shibuya.tokyo.jp/",
+      "source_fetched_at": "2026-07-26T14:17:01.050474+00:00",
+      "published_at": "2026-07-10T00:00:00Z"
     }
   ]
 }
