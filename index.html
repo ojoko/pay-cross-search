@@ -8,7 +8,7 @@
     <title>PayCross Pro - お得店舗＆Pay決済クロス検索</title>
 
     <!-- Content Security Policy -->
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://unpkg.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://unpkg.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https: blob:; connect-src 'self' https://ipapi.co https://*.tile.openstreetmap.org https://nominatim.openstreetmap.org;">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://unpkg.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://unpkg.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https: blob:; connect-src 'self' https://*.tile.openstreetmap.org;">
 
     <!-- PWA & Apple Meta Tags -->
     <link rel="manifest" href="manifest.json">
@@ -53,7 +53,7 @@
             <p class="app-subtitle">店舗ごとの「一番お得なPay決済」を一発判定＆マップ検索</p>
             <div id="sync-status-badge" class="sync-badge">
                 <span class="status-dot green"></span>
-                <span id="sync-status-text">自治体＆実データ同期完了 (自動更新中)</span>
+                <span id="sync-status-text">キャンペーンデータを同期中</span>
             </div>
         </header>
 
@@ -64,19 +64,10 @@
                 <h2 id="heading-search"><span class="icon">🔍</span> 検索・条件設定</h2>
                 
                 <div class="input-group">
-                    <label for="location-search-input">場所・駅名・店舗名で検索</label>
+                    <label for="location-search-input">店舗名・ジャンルで周辺検索</label>
                     <div class="location-search-wrapper">
-                        <input type="text" id="location-search-input" placeholder="例: 海老名, 吉野家, イオン" autocomplete="off">
+                        <input type="text" id="location-search-input" placeholder="例: 薬局、吉野家（空欄ですべて）" autocomplete="off">
                         <button id="btn-location-search" class="btn-search-icon">🔍 検索</button>
-                    </div>
-                    <!-- Live Autocomplete Suggestion Dropdown -->
-                    <div id="search-autocomplete-dropdown" class="autocomplete-dropdown hidden" role="listbox"></div>
-
-                    <div class="location-presets">
-                        <span class="preset-label">最寄り駅・エリア:</span>
-                        <div id="dynamic-presets-container" class="presets-chips-group">
-                            <!-- Dynamically generated station chips -->
-                        </div>
                     </div>
                 </div>
 
@@ -100,6 +91,15 @@
                             <option value="supermarket">スーパー・ドラッグストア</option>
                             <option value="restaurant">飲食店・カフェ</option>
                             <option value="appliance">家電量販店</option>
+                        </select>
+                    </div>
+
+                    <div class="input-group">
+                        <label for="search-radius">検索範囲</label>
+                        <select id="search-radius" class="select-input">
+                            <option value="1000">1km以内</option>
+                            <option value="3000" selected>3km以内</option>
+                            <option value="5000">5km以内</option>
                         </select>
                     </div>
                 </div>
@@ -132,10 +132,14 @@
                 <!-- Location Action Bar -->
                 <div class="location-bar">
                     <button id="btn-gps" class="btn-location">
-                        <span class="icon">📍</span> 現在地付近を検索
+                        <span class="icon">📍</span> 現在地から検索
                     </button>
+                    <div class="center-search-wrapper">
+                        <input type="text" id="center-search-input" placeholder="駅名・住所で検索中心を変更" autocomplete="off" aria-label="検索中心">
+                        <button type="button" id="btn-center-search">中心を変更</button>
+                    </div>
                     <div class="active-location-tag">
-                        基準地: <span id="current-location-name">海老名</span>
+                        基準地: <span id="current-location-name">現在地を取得中</span>
                     </div>
                 </div>
             </section>
@@ -152,8 +156,8 @@
             <!-- PAY CAMPAIGN FETCH STATUS PANEL -->
             <section class="card pay-status-card" aria-labelledby="heading-pay-status">
                 <div class="pay-status-header">
-                    <h3 id="heading-pay-status"><span class="icon">📡</span> 各Payキャンペーン取得状況 (<span class="highlight-city">海老名</span>)</h3>
-                    <span class="status-live-tag">LIVE</span>
+                    <h3 id="heading-pay-status"><span class="icon">📡</span> 各Payキャンペーン確認状況 (<span class="highlight-city">未設定</span>)</h3>
+                    <span class="status-live-tag">店舗別</span>
                 </div>
                 <div id="pay-status-grid" class="pay-status-grid">
                     <!-- Dynamically rendered pay status items -->
@@ -163,7 +167,7 @@
             <!-- STORE RANKING LIST CONTAINER -->
             <section class="stores-container" aria-labelledby="heading-stores">
                 <div class="stores-header">
-                    <h2 id="heading-stores"><span class="icon">🏆</span> お得店舗＆還元額ランキング</h2>
+                    <h2 id="heading-stores"><span class="icon">🏪</span> 検索店舗一覧</h2>
                     <span id="store-count-label" class="store-count">0件の店舗</span>
                 </div>
 
@@ -177,7 +181,7 @@
         <footer class="app-footer">
             <div class="footer-info">
                 <p>&copy; 2026 PayCross Project. All rights reserved.</p>
-                <p class="disclaimer">※ 還元率はベース率＋各社発表キャンペーン・自治体還元の合算値です。実際の決済前に各Payアプリ内でエントリー状況・利用可能店舗をご確認ください。</p>
+                <p class="disclaimer">※ 店舗情報はOpenStreetMapを使用しています。Pay対応情報が未登録の店舗ではランキングは参考値です。実際の決済前に店舗・各Payアプリで利用可否とキャンペーン条件をご確認ください。</p>
             </div>
         </footer>
     </div>
