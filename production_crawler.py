@@ -5,7 +5,6 @@ Parses official announcements, normalizes campaign rules, and outputs atomic JSO
 
 import json
 import os
-import time
 import datetime
 import urllib.request
 import urllib.error
@@ -71,14 +70,15 @@ DEFAULT_CAMPAIGNS = [
 
 def fetch_official_campaigns():
     """
-    Fetch official announcements. Returns verified active campaign records.
+    Fetch official announcements. Automatically detected records remain
+    review candidates until rate, cap, dates, and eligibility are verified.
     """
     fetched_campaigns = list(DEFAULT_CAMPAIGNS)
     
     # Try fetching official PayPay announcement page safely
     try:
         req = urllib.request.Request(
-            "https://paypay.ne.jp/event/matsuri-202404-local/",
+            "https://paypay.ne.jp/event/",
             headers={"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"}
         )
         with urllib.request.urlopen(req, timeout=8) as response:
@@ -91,18 +91,18 @@ def fetch_official_campaigns():
                     if city not in ["海老名市", "渋谷区"]:
                         fetched_campaigns.append({
                             "id": f"paypay-live-{idx}",
-                            "title": f"{city}×PayPay 応援キャンペーン",
+                            "title": f"PayPay公式ページ内の{city}関連情報（要確認）",
                             "target_region": city,
                             "target_pay": "paypay",
                             "eligible_payment_method": ["paypay_balance"],
                             "rate_mode": "bonus",
-                            "bonus_rate": 0.20,
-                            "max_per_txn": 1000,
-                            "max_per_period": 5000,
-                            "start_date": datetime.date.today().strftime("%Y-%m-%d"),
-                            "end_date": (datetime.date.today() + datetime.timedelta(days=30)).strftime("%Y-%m-%d"),
-                            "verification_status": "verified",
-                            "source_url": "https://paypay.ne.jp/event/matsuri-202404-local/",
+                            "bonus_rate": None,
+                            "max_per_txn": None,
+                            "max_per_period": None,
+                            "start_date": None,
+                            "end_date": None,
+                            "verification_status": "needs_review",
+                            "source_url": "https://paypay.ne.jp/event/",
                             "source_fetched_at": datetime.datetime.now(datetime.timezone.utc).isoformat(),
                             "published_at": datetime.datetime.now(datetime.timezone.utc).isoformat()
                         })

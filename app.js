@@ -11,6 +11,15 @@ function escapeHTML(str) {
         .replace(/'/g, '&#039;');
 }
 
+function getSafeExternalUrl(value) {
+    try {
+        const url = new URL(String(value || ''), window.location.origin);
+        return url.protocol === 'https:' || url.protocol === 'http:' ? url.toString() : '';
+    } catch {
+        return '';
+    }
+}
+
 // Payment Brands Data with App Deep Links
 const PAY_BRANDS = {
     paypay: { id: 'paypay', name: 'PayPay', color: '#ff0033', baseRate: 0.005, deepLink: 'paypay://', webFallback: 'https://paypay.ne.jp/' },
@@ -165,6 +174,10 @@ let activePresetStation = null;
 let deferredPwaPrompt = null;
 let renderDebounceTimer = null;
 let activeGeocodeController = null;
+const CAMPAIGN_CACHE_TTL_MS = 6 * 60 * 60 * 1000;
+const campaignLookupState = new Map();
+const onDemandCampaignsByStore = new Map();
+const campaignLookupPromises = new Map();
 
 // Regional Stations Presets
 const STATION_PRESETS = [
@@ -300,12 +313,28 @@ function mergeLiveCampaignsIntoStores() {
         liveCampaignsData.forEach(c => {
             const matchesRegion = c.target_region && (store.address.includes(c.target_region) || store.areaKeys.some(k => k.includes(c.target_region)));
             if (matchesRegion && c.target_pay && PAY_BRANDS[c.target_pay]) {
-                store.campaigns[c.target_pay] = {
-                    rate: c.bonus_rate || 0.20,
+                const current = store.campaigns[c.target_pay];
+                const campaigns = Array.isArray(current) ? current : (current ? [current] : []);
+                const normalized = {
+                    id: c.id,
+                    rate: Number.isFinite(Number(c.bonus_rate)) ? Number(c.bonus_rate) : 0,
                     name: c.title || '特別還元中',
-                    maxPerTxn: c.max_per_txn || 1000,
-                    rateMode: c.rate_mode || 'bonus'
+                    maxPerTxn: Number.isFinite(Number(c.max_per_txn)) ? Number(c.max_per_txn) : Infinity,
+                    rateMode: c.rate_mode || 'bonus',
+                    sourceUrl: c.source_url || '',
+                    sourceFetchedAt: c.source_fetched_at || '',
+                    verificationStatus: c.verification_status || 'unverified',
+                    retrieval: 'server_cache',
+                    stackable: c.stackable === true
                 };
+                const key = normalized.id || `${normalized.name}|${normalized.sourceUrl}`;
+                const existingIndex = campaigns.findIndex(item =>
+                    (item.id || `${item.name}|${item.sourceUrl || ''}`) === key ||
+                    (!item.id && Number(item.rate) === normalized.rate && Number(item.maxPerTxn) === normalized.maxPerTxn)
+                );
+                if (existingIndex >= 0) campaigns[existingIndex] = normalized;
+                else campaigns.push(normalized);
+                store.campaigns[c.target_pay] = campaigns;
             }
         });
     });
@@ -588,7 +617,52 @@ function renderMapMarkers() {
     });
 }
 
-// Point Reward Calculation with Separate Base Points & Campaign Cap Logic
+function normalizeCampaign(campaign, fallbackRetrieval = 'bundled') {
+    if (!campaign || typeof campaign !== 'object') return null;
+    const rate = Number(campaign.rate ?? campaign.bonus_rate);
+    const rawCap = campaign.maxPerTxn ?? campaign.max_per_txn;
+    const cap = rawCap === null || rawCap === undefined || rawCap === ''
+        ? Infinity
+        : Number(rawCap);
+    return {
+        id: String(campaign.id || ''),
+        name: String(campaign.name || campaign.title || 'キャンペーン'),
+        rate: Number.isFinite(rate) && rate >= 0 ? rate : 0,
+        maxPerTxn: Number.isFinite(cap) && cap >= 0 ? cap : Infinity,
+        rateMode: campaign.rateMode || campaign.rate_mode || 'bonus',
+        sourceUrl: String(campaign.sourceUrl || campaign.source_url || ''),
+        sourceFetchedAt: String(campaign.sourceFetchedAt || campaign.source_fetched_at || ''),
+        verificationStatus: campaign.verificationStatus || campaign.verification_status || 'verified',
+        retrieval: campaign.retrieval || fallbackRetrieval,
+        stackable: campaign.stackable === true
+    };
+}
+
+function getCampaignsForPay(store, payId) {
+    const bundledValue = store.campaigns?.[payId];
+    const bundled = (Array.isArray(bundledValue) ? bundledValue : (bundledValue ? [bundledValue] : []))
+        .map(campaign => normalizeCampaign(campaign))
+        .filter(Boolean);
+    const onDemand = (onDemandCampaignsByStore.get(String(store.id)) || [])
+        .filter(campaign => campaign.target_pay === payId)
+        .map(campaign => normalizeCampaign(campaign, campaign.retrieval || 'server_cache'))
+        .filter(Boolean);
+
+    const deduped = new Map();
+    [...bundled, ...onDemand].forEach(campaign => {
+        const key = campaign.id || `${campaign.name}|${campaign.rate}|${campaign.maxPerTxn}|${campaign.sourceUrl}`;
+        deduped.set(key, campaign);
+    });
+    return [...deduped.values()];
+}
+
+function calculateCampaignReward(campaign) {
+    const amount = Number.isFinite(currentAmount) && currentAmount > 0 ? currentAmount : 0;
+    const rawReward = Math.floor(amount * campaign.rate);
+    return Math.max(0, Math.min(rawReward, campaign.maxPerTxn));
+}
+
+// Point Reward Calculation with safe caps and conservative campaign stacking.
 function getStoreDeals(store) {
     const deals = [];
 
@@ -596,25 +670,28 @@ function getStoreDeals(store) {
         if (!selectedPays.has(payId)) return;
 
         const brand = PAY_BRANDS[payId];
-        const campaign = store.campaigns[payId];
+        if (!brand) return;
+        const amount = Number.isFinite(currentAmount) && currentAmount > 0 ? currentAmount : 0;
+        const baseRate = Number.isFinite(brand.baseRate) && brand.baseRate >= 0 ? brand.baseRate : 0;
+        const baseReward = Math.floor(amount * baseRate);
+        const campaigns = getCampaignsForPay(store, payId)
+            .filter(campaign => campaign.verificationStatus === 'verified')
+            .map(campaign => ({ ...campaign, reward: calculateCampaignReward(campaign), includedInTotal: false }))
+            .sort((a, b) => b.reward - a.reward);
 
-        // 1. Calculate Base Reward Points
-        const baseReward = Math.floor(currentAmount * brand.baseRate);
-
-        // 2. Calculate Campaign Bonus Points with Cap (maxPerTxn)
-        let campaignReward = 0;
-        let campaignName = null;
-
-        if (campaign) {
-            campaignName = campaign.name;
-            const rawCampPoints = Math.floor(currentAmount * campaign.rate);
-            const cap = campaign.maxPerTxn ?? Infinity;
-            campaignReward = Math.min(rawCampPoints, cap);
+        if (campaigns.length === 1) {
+            campaigns[0].includedInTotal = true;
+        } else if (campaigns.length > 1) {
+            const allExplicitlyStackable = campaigns.every(campaign => campaign.stackable === true);
+            if (allExplicitlyStackable) campaigns.forEach(campaign => { campaign.includedInTotal = true; });
+            else campaigns[0].includedInTotal = true;
         }
 
-        // 3. Total Reward Amount = Base + Capped Campaign
+        const campaignReward = campaigns
+            .filter(campaign => campaign.includedInTotal)
+            .reduce((total, campaign) => total + campaign.reward, 0);
         const rewardAmount = baseReward + campaignReward;
-        const actualRate = currentAmount > 0 ? rewardAmount / currentAmount : 0;
+        const actualRate = amount > 0 ? rewardAmount / amount : 0;
 
         deals.push({
             payId,
@@ -623,11 +700,12 @@ function getStoreDeals(store) {
             rewardAmount,
             baseReward,
             campaignReward,
-            campaignName
+            campaignName: campaigns.find(campaign => campaign.includedInTotal)?.name || null,
+            campaigns
         });
     });
 
-    deals.sort((a, b) => b.rewardAmount - a.rewardAmount);
+    deals.sort((a, b) => b.rewardAmount - a.rewardAmount || a.brand.name.localeCompare(b.brand.name, 'ja'));
     return deals;
 }
 
@@ -637,6 +715,187 @@ function getFilteredStores() {
         if (currentCategory !== 'all' && store.category !== currentCategory) return false;
         return store.acceptedPays.some(p => selectedPays.has(p));
     });
+}
+
+function getCampaignCacheKey(storeId) {
+    return `paycross:campaigns:v1:${String(storeId)}`;
+}
+
+function readDeviceCampaignCache(storeId, allowStale = false) {
+    try {
+        const raw = localStorage.getItem(getCampaignCacheKey(storeId));
+        if (!raw) return null;
+        const cached = JSON.parse(raw);
+        if (!cached?.payload || cached.payload.store_id !== String(storeId)) return null;
+        if (!allowStale && Date.now() >= Number(cached.expiresAt || 0)) return null;
+        return cached.payload;
+    } catch {
+        return null;
+    }
+}
+
+function writeDeviceCampaignCache(storeId, payload) {
+    try {
+        const ttlMs = Math.min(
+            CAMPAIGN_CACHE_TTL_MS,
+            Math.max(60_000, Number(payload.cache_ttl_seconds || 0) * 1000 || CAMPAIGN_CACHE_TTL_MS)
+        );
+        localStorage.setItem(getCampaignCacheKey(storeId), JSON.stringify({
+            expiresAt: Date.now() + ttlMs,
+            payload
+        }));
+    } catch (error) {
+        console.warn('[Campaign Cache] Device cache unavailable:', error);
+    }
+}
+
+function applyCampaignLookup(store, payload, retrievalOverride = '') {
+    const campaigns = Array.isArray(payload.campaigns) ? payload.campaigns : [];
+    const sources = Array.isArray(payload.sources) ? payload.sources : [];
+    onDemandCampaignsByStore.set(String(store.id), campaigns.map(campaign => ({
+        ...campaign,
+        retrieval: retrievalOverride || campaign.retrieval || 'server_cache'
+    })));
+    campaignLookupState.set(String(store.id), {
+        status: 'loaded',
+        checkedAt: payload.checked_at || new Date().toISOString(),
+        retrieval: retrievalOverride || 'official_web_live',
+        sources: sources.map(source => ({
+            ...source,
+            retrieval: retrievalOverride || source.retrieval
+        }))
+    });
+}
+
+async function loadStoreCampaigns(store) {
+    const storeKey = String(store.id);
+    if (campaignLookupPromises.has(storeKey)) return campaignLookupPromises.get(storeKey);
+
+    const cached = readDeviceCampaignCache(storeKey);
+    if (cached) {
+        applyCampaignLookup(store, cached, 'device_cache');
+        renderStoreList();
+        return;
+    }
+
+    campaignLookupState.set(storeKey, { status: 'loading' });
+    renderStoreList();
+
+    const lookupPromise = (async () => {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 12_000);
+        try {
+            const response = await fetch('/api/store-campaigns', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    store: {
+                        id: storeKey,
+                        name: store.name,
+                        address: store.address,
+                        acceptedPays: store.acceptedPays
+                    }
+                }),
+                signal: controller.signal
+            });
+            if (!response.ok) throw new Error(`HTTP ${response.status}`);
+            const payload = await response.json();
+            if (payload?.store_id !== storeKey) throw new Error('Invalid campaign response');
+            applyCampaignLookup(store, payload);
+            writeDeviceCampaignCache(storeKey, payload);
+        } catch (error) {
+            const stale = readDeviceCampaignCache(storeKey, true);
+            if (stale) {
+                applyCampaignLookup(store, stale, 'device_cache_stale');
+                const state = campaignLookupState.get(storeKey);
+                campaignLookupState.set(storeKey, { ...state, stale: true });
+            } else {
+                campaignLookupState.set(storeKey, {
+                    status: 'error',
+                    message: error.name === 'AbortError'
+                        ? '確認がタイムアウトしました。時間をおいて再度お試しください。'
+                        : '公式サイトを確認できませんでした。時間をおいて再度お試しください。'
+                });
+            }
+        } finally {
+            clearTimeout(timeoutId);
+            campaignLookupPromises.delete(storeKey);
+            renderStoreList();
+        }
+    })();
+
+    campaignLookupPromises.set(storeKey, lookupPromise);
+    return lookupPromise;
+}
+
+function getRetrievalLabel(retrieval) {
+    const labels = {
+        official_web_live: '公式Webを今回確認',
+        server_cache: 'サーバーキャッシュ',
+        server_cache_stale: 'サーバーキャッシュ（期限切れ）',
+        device_cache: '端末キャッシュ',
+        device_cache_stale: '端末キャッシュ（期限切れ）',
+        fetch_failed: '取得失敗',
+        bundled: 'アプリ内登録データ'
+    };
+    return labels[retrieval] || '取得元不明';
+}
+
+function formatCampaignTime(value) {
+    if (!value) return '';
+    const date = new Date(value);
+    return Number.isNaN(date.getTime()) ? '' : date.toLocaleString('ja-JP');
+}
+
+function renderCampaignLookupPanel(store) {
+    const state = campaignLookupState.get(String(store.id));
+    if (!state) {
+        return `
+            <div class="campaign-lookup">
+                <button class="btn-campaign-check" type="button">この店舗のキャンペーンを確認</button>
+                <span class="campaign-lookup-note">押した時だけ公式サイトを確認します</span>
+            </div>
+        `;
+    }
+    if (state.status === 'loading') {
+        return `<div class="campaign-lookup is-loading"><button class="btn-campaign-check" type="button" disabled>確認中…</button><span>対応Payの公式サイトを確認しています</span></div>`;
+    }
+    if (state.status === 'error') {
+        return `<div class="campaign-lookup is-error"><button class="btn-campaign-check" type="button">再確認する</button><span>${escapeHTML(state.message)}</span></div>`;
+    }
+
+    const sourceItems = (state.sources || []).map(source => {
+        const payName = PAY_BRANDS[source.pay_id]?.name || source.pay_id;
+        const checkedAt = formatCampaignTime(source.checked_at);
+        const safeUrl = getSafeExternalUrl(source.url);
+        const sourceName = safeUrl
+            ? `<a href="${escapeHTML(safeUrl)}" target="_blank" rel="noopener noreferrer">${escapeHTML(payName)}公式</a>`
+            : `${escapeHTML(payName)}公式`;
+        return `<li>${sourceName}：${escapeHTML(getRetrievalLabel(source.retrieval))}${checkedAt ? `（${escapeHTML(checkedAt)}）` : ''}</li>`;
+    }).join('');
+    const hints = (state.sources || []).flatMap(source =>
+        (source.campaign_hints || []).map(hint => ({ ...hint, payId: source.pay_id }))
+    );
+    const hintsHtml = hints.length > 0 ? `
+        <details class="campaign-hints">
+            <summary>店舗・地域に関連する未検証情報 ${hints.length}件（還元計算には未使用）</summary>
+            <ul>${hints.map(hint => {
+                const safeUrl = getSafeExternalUrl(hint.url);
+                const title = escapeHTML(hint.title);
+                return `<li>${escapeHTML(PAY_BRANDS[hint.payId]?.name || hint.payId)}：${safeUrl ? `<a href="${escapeHTML(safeUrl)}" target="_blank" rel="noopener noreferrer">${title}</a>` : title}</li>`;
+            }).join('')}</ul>
+        </details>
+    ` : '';
+    return `
+        <div class="campaign-lookup is-loaded">
+            <div class="campaign-lookup-actions">
+                <button class="btn-campaign-check" type="button">再確認する</button>
+                <span>${escapeHTML(getRetrievalLabel(state.retrieval))}${state.stale ? '・期限切れ情報' : ''}</span>
+            </div>
+            <ul class="campaign-source-list">${sourceItems}</ul>
+            ${hintsHtml}
+        </div>
+    `;
 }
 
 // Render Store List & Ranking Cards with Debounce
@@ -685,23 +944,44 @@ function renderStoreList() {
         let dealsHtml = '';
         deals.forEach((deal, idx) => {
             const isTop = idx === 0;
+            const campaignDetailsHtml = deal.campaigns.map(campaign => {
+                const capText = Number.isFinite(campaign.maxPerTxn) ? `・1回上限 ${campaign.maxPerTxn.toLocaleString()}pt` : '';
+                const sourceText = getRetrievalLabel(campaign.retrieval);
+                const fetchedAt = formatCampaignTime(campaign.sourceFetchedAt);
+                const safeSourceUrl = getSafeExternalUrl(campaign.sourceUrl);
+                const sourceHtml = safeSourceUrl
+                    ? `<a href="${escapeHTML(safeSourceUrl)}" target="_blank" rel="noopener noreferrer">${escapeHTML(sourceText)}</a>`
+                    : escapeHTML(sourceText);
+                return `
+                    <li class="campaign-detail ${campaign.includedInTotal ? 'is-counted' : 'is-reference'}">
+                        <div><strong>${escapeHTML(campaign.name)}</strong>（${(campaign.rate * 100).toFixed(1)}%${capText}）</div>
+                        <div class="campaign-meta">
+                            ${campaign.includedInTotal ? `計算に反映 +${campaign.reward.toLocaleString()}pt` : '重複適用未確認のため計算対象外'}
+                            ・情報元: ${sourceHtml}${fetchedAt ? `・取得 ${escapeHTML(fetchedAt)}` : ''}
+                        </div>
+                    </li>
+                `;
+            }).join('');
             dealsHtml += `
                 <div class="pay-rank-item ${isTop ? 'is-top' : ''}">
-                    <div class="rank-left">
-                        <span class="rank-num">#${idx + 1}</span>
-                        <div class="pay-brand-name">
-                            <span class="pay-dot ${escapeHTML(deal.payId)}"></span>
-                            ${escapeHTML(deal.brand.name)}
-                            ${deal.campaignName ? `<span class="campaign-tag">${escapeHTML(deal.campaignName)}</span>` : ''}
+                    <div class="rank-main">
+                        <div class="rank-left">
+                            <span class="rank-num">#${idx + 1}</span>
+                            <div class="pay-brand-name">
+                                <span class="pay-dot ${escapeHTML(deal.payId)}"></span>
+                                ${escapeHTML(deal.brand.name)}
+                                ${deal.campaigns.length > 0 ? `<span class="campaign-tag">${deal.campaigns.length}件</span>` : ''}
+                            </div>
+                        </div>
+                        <div class="rank-right">
+                            <div class="reward-amount">+${deal.rewardAmount.toLocaleString()} pt</div>
+                            <div class="reward-rate">実効 ${(deal.actualRate * 100).toFixed(1)}%</div>
+                            <button class="btn-pay-launch" data-pay="${escapeHTML(deal.payId)}">
+                                アプリ起動 🚀
+                            </button>
                         </div>
                     </div>
-                    <div class="rank-right">
-                        <div class="reward-amount">+${deal.rewardAmount.toLocaleString()} pt</div>
-                        <div class="reward-rate">実効 ${(deal.actualRate * 100).toFixed(1)}%</div>
-                        <button class="btn-pay-launch" data-pay="${escapeHTML(deal.payId)}">
-                            アプリ起動 🚀
-                        </button>
-                    </div>
+                    ${campaignDetailsHtml ? `<ul class="campaign-detail-list">${campaignDetailsHtml}</ul>` : ''}
                 </div>
             `;
         });
@@ -726,6 +1006,8 @@ function renderStoreList() {
                 ` : ''}
             </div>
 
+            ${renderCampaignLookupPanel(store)}
+
             <div class="pay-ranking-list">
                 ${dealsHtml.length > 0 ? dealsHtml : '<div style="color: var(--text-secondary); font-size: 0.85rem;">選択した決済サービスに対応していません</div>'}
             </div>
@@ -733,6 +1015,10 @@ function renderStoreList() {
 
         // Card click handler
         cardEl.addEventListener('click', (e) => {
+            if (e.target.closest('.btn-campaign-check')) {
+                loadStoreCampaigns(store);
+                return;
+            }
             if (e.target.closest('.btn-pay-launch')) {
                 const payId = e.target.closest('.btn-pay-launch').dataset.pay;
                 launchPayApp(payId);
