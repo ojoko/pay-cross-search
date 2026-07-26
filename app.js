@@ -453,6 +453,9 @@ function normalizeCampaign(campaign, fallbackRetrieval = 'bundled') {
         sourceUrl: String(campaign.sourceUrl || campaign.source_url || ''),
         sourceFetchedAt: String(campaign.sourceFetchedAt || campaign.source_fetched_at || ''),
         verificationStatus: campaign.verificationStatus || campaign.verification_status || 'verified',
+        eligibilityStatus: campaign.eligibilityStatus || campaign.eligibility_status || 'confirmed',
+        matchReason: String(campaign.matchReason || campaign.match_reason || ''),
+        benefitText: String(campaign.benefitText || campaign.benefit_text || ''),
         retrieval: campaign.retrieval || fallbackRetrieval,
         stackable: campaign.stackable === true
     };
@@ -493,18 +496,30 @@ function getStoreDeals(store) {
         if (!brand) return;
         const amount = Number.isFinite(currentAmount) && currentAmount > 0 ? currentAmount : 0;
         const baseRate = Number.isFinite(brand.baseRate) && brand.baseRate >= 0 ? brand.baseRate : 0;
-        const baseReward = Math.floor(amount * baseRate);
         const campaigns = getCampaignsForPay(store, payId)
-            .filter(campaign => campaign.verificationStatus === 'verified')
-            .map(campaign => ({ ...campaign, reward: calculateCampaignReward(campaign), includedInTotal: false }))
-            .sort((a, b) => b.reward - a.reward);
+            .map(campaign => ({
+                ...campaign,
+                reward: campaign.verificationStatus === 'verified' ? calculateCampaignReward(campaign) : 0,
+                includedInTotal: false
+            }))
+            .sort((a, b) =>
+                Number(b.verificationStatus === 'verified') - Number(a.verificationStatus === 'verified') ||
+                b.reward - a.reward
+            );
+        const baseExcluded = campaigns.some(campaign =>
+            campaign.eligibilityStatus === 'excluded' && campaign.rateMode === 'base_exclusion'
+        );
+        const baseReward = baseExcluded ? 0 : Math.floor(amount * baseRate);
+        const calculableCampaigns = campaigns.filter(campaign =>
+            campaign.verificationStatus === 'verified' && campaign.eligibilityStatus === 'confirmed'
+        );
 
-        if (campaigns.length === 1) {
-            campaigns[0].includedInTotal = true;
-        } else if (campaigns.length > 1) {
-            const allExplicitlyStackable = campaigns.every(campaign => campaign.stackable === true);
-            if (allExplicitlyStackable) campaigns.forEach(campaign => { campaign.includedInTotal = true; });
-            else campaigns[0].includedInTotal = true;
+        if (calculableCampaigns.length === 1) {
+            calculableCampaigns[0].includedInTotal = true;
+        } else if (calculableCampaigns.length > 1) {
+            const allExplicitlyStackable = calculableCampaigns.every(campaign => campaign.stackable === true);
+            if (allExplicitlyStackable) calculableCampaigns.forEach(campaign => { campaign.includedInTotal = true; });
+            else calculableCampaigns[0].includedInTotal = true;
         }
 
         const campaignReward = campaigns
@@ -538,7 +553,7 @@ function getFilteredStores() {
 }
 
 function getCampaignCacheKey(storeId) {
-    return `paycross:campaigns:v1:${String(storeId)}`;
+    return `paycross:campaigns:v2:${String(storeId)}`;
 }
 
 function readDeviceCampaignCache(storeId, allowStale = false) {
@@ -658,6 +673,7 @@ function getRetrievalLabel(retrieval) {
         device_cache: '端末キャッシュ',
         device_cache_stale: '端末キャッシュ（期限切れ）',
         fetch_failed: '取得失敗',
+        app_confirmation_required: '公式アプリで確認が必要',
         bundled: 'アプリ内登録データ',
         openstreetmap_live: 'OpenStreetMapから取得',
         openstreetmap_photon: 'OpenStreetMap予備検索'
@@ -698,18 +714,29 @@ function renderCampaignLookupPanel(store) {
         const sourceName = safeUrl
             ? `<a href="${escapeHTML(safeUrl)}" target="_blank" rel="noopener noreferrer">${escapeHTML(payName)}公式</a>`
             : `${escapeHTML(payName)}公式`;
-        return `<li>${sourceName}：${escapeHTML(getRetrievalLabel(source.retrieval))}${checkedAt ? `（${escapeHTML(checkedAt)}）` : ''}</li>`;
+        const coverageText = {
+            official_web_store_match: '店舗名・地域を自動照合',
+            official_web_limited: '公開Webの範囲で照合',
+            app_only: 'アプリ内情報のため自動取得不可',
+            manual_confirmation: '公式ページで個別確認が必要'
+        }[source.coverage] || '';
+        return `<li>${sourceName}：${escapeHTML(getRetrievalLabel(source.retrieval))}${coverageText ? `・${escapeHTML(coverageText)}` : ''}${checkedAt ? `（${escapeHTML(checkedAt)}）` : ''}</li>`;
     }).join('');
     const hints = (state.sources || []).flatMap(source =>
         (source.campaign_hints || []).map(hint => ({ ...hint, payId: source.pay_id }))
     );
     const hintsHtml = hints.length > 0 ? `
         <details class="campaign-hints">
-            <summary>店舗・地域に関連する未検証情報 ${hints.length}件（還元計算には未使用）</summary>
+            <summary>店舗・地域に一致した公式情報 ${hints.length}件</summary>
             <ul>${hints.map(hint => {
                 const safeUrl = getSafeExternalUrl(hint.url);
                 const title = escapeHTML(hint.title);
-                return `<li>${escapeHTML(PAY_BRANDS[hint.payId]?.name || hint.payId)}：${safeUrl ? `<a href="${escapeHTML(safeUrl)}" target="_blank" rel="noopener noreferrer">${title}</a>` : title}</li>`;
+                const statusText = {
+                    confirmed: '対象確定',
+                    conditional: '条件一致・要確認',
+                    excluded: '対象外'
+                }[hint.eligibility_status] || '確認必要';
+                return `<li>${escapeHTML(PAY_BRANDS[hint.payId]?.name || hint.payId)}：${safeUrl ? `<a href="${escapeHTML(safeUrl)}" target="_blank" rel="noopener noreferrer">${title}</a>` : title}（${statusText}${hint.match_reason ? `・${escapeHTML(hint.match_reason)}` : ''}）</li>`;
             }).join('')}</ul>
         </details>
     ` : '';
@@ -820,6 +847,19 @@ function renderStoreList() {
             const isTop = idx === 0;
             const campaignDetailsHtml = deal.campaigns.map(campaign => {
                 const capText = Number.isFinite(campaign.maxPerTxn) ? `・1回上限 ${campaign.maxPerTxn.toLocaleString()}pt` : '';
+                const rateText = campaign.rate > 0 ? `${(campaign.rate * 100).toFixed(1)}%${capText}` : '率・上限は公式ページで確認';
+                const eligibilityText = {
+                    confirmed: '対象確定',
+                    conditional: '条件一致・要確認',
+                    excluded: '対象外'
+                }[campaign.eligibilityStatus] || '確認必要';
+                const calculationText = campaign.includedInTotal
+                    ? `計算に反映 +${campaign.reward.toLocaleString()}pt`
+                    : campaign.eligibilityStatus === 'excluded'
+                        ? '対象外のため計算しません'
+                        : campaign.verificationStatus !== 'verified'
+                            ? '適用条件が未確定のため計算しません'
+                            : '重複適用未確認のため計算対象外';
                 const sourceText = getRetrievalLabel(campaign.retrieval);
                 const fetchedAt = formatCampaignTime(campaign.sourceFetchedAt);
                 const safeSourceUrl = getSafeExternalUrl(campaign.sourceUrl);
@@ -828,9 +868,10 @@ function renderStoreList() {
                     : escapeHTML(sourceText);
                 return `
                     <li class="campaign-detail ${campaign.includedInTotal ? 'is-counted' : 'is-reference'}">
-                        <div><strong>${escapeHTML(campaign.name)}</strong>（${(campaign.rate * 100).toFixed(1)}%${capText}）</div>
+                        <div><strong>${escapeHTML(campaign.name)}</strong>（${escapeHTML(rateText)}・${escapeHTML(eligibilityText)}）</div>
+                        ${campaign.benefitText ? `<div class="campaign-meta">${escapeHTML(campaign.benefitText)}</div>` : ''}
                         <div class="campaign-meta">
-                            ${campaign.includedInTotal ? `計算に反映 +${campaign.reward.toLocaleString()}pt` : '重複適用未確認のため計算対象外'}
+                            ${calculationText}${campaign.matchReason ? `・${escapeHTML(campaign.matchReason)}` : ''}
                             ・情報元: ${sourceHtml}${fetchedAt ? `・取得 ${escapeHTML(fetchedAt)}` : ''}
                         </div>
                     </li>

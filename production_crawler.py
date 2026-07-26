@@ -13,60 +13,9 @@ import re
 DATA_FILE = "production_live_data.json"
 TEMP_FILE = ".production_live_data.json.tmp"
 
-# Standard Schema Field Specifications
-DEFAULT_CAMPAIGNS = [
-    {
-        "id": "ebina-paypay-2026",
-        "title": "海老名市×PayPay 最大20%戻ってくるキャンペーン",
-        "target_region": "海老名市",
-        "target_pay": "paypay",
-        "eligible_payment_method": ["paypay_balance", "paypay_card"],
-        "rate_mode": "bonus",
-        "bonus_rate": 0.20,
-        "max_per_txn": 1000,
-        "max_per_period": 5000,
-        "start_date": "2026-07-01",
-        "end_date": "2026-08-31",
-        "verification_status": "verified",
-        "source_url": "https://www.city.ebina.kanagawa.jp/",
-        "source_fetched_at": datetime.datetime.now(datetime.timezone.utc).isoformat(),
-        "published_at": "2026-06-25T00:00:00Z"
-    },
-    {
-        "id": "ebina-dbarai-2026",
-        "title": "海老名市×d払い 街のお店応援20%還元",
-        "target_region": "海老名市",
-        "target_pay": "dbarai",
-        "eligible_payment_method": ["dbarai_app"],
-        "rate_mode": "bonus",
-        "bonus_rate": 0.20,
-        "max_per_txn": 1000,
-        "max_per_period": 5000,
-        "start_date": "2026-07-01",
-        "end_date": "2026-08-31",
-        "verification_status": "verified",
-        "source_url": "https://service.smt.docomo.ne.jp/keitai_payment/",
-        "source_fetched_at": datetime.datetime.now(datetime.timezone.utc).isoformat(),
-        "published_at": "2026-06-25T00:00:00Z"
-    },
-    {
-        "id": "shibuya-paypay-2026",
-        "title": "渋谷区ハチペイ・PayPay還元フェス",
-        "target_region": "渋谷区",
-        "target_pay": "paypay",
-        "eligible_payment_method": ["paypay_balance"],
-        "rate_mode": "bonus",
-        "bonus_rate": 0.20,
-        "max_per_txn": 2000,
-        "max_per_period": 10000,
-        "start_date": "2026-07-15",
-        "end_date": "2026-08-15",
-        "verification_status": "verified",
-        "source_url": "https://www.city.shibuya.tokyo.jp/",
-        "source_fetched_at": datetime.datetime.now(datetime.timezone.utc).isoformat(),
-        "published_at": "2026-07-10T00:00:00Z"
-    }
-]
+# Do not ship unverifiable sample campaigns as production facts.
+# Automatically discovered records remain needs_review until independently verified.
+DEFAULT_CAMPAIGNS = []
 
 def fetch_official_campaigns():
     """
