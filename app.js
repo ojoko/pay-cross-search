@@ -212,8 +212,13 @@ async function fetchNearbyStores(keyword = keywordSearchQuery) {
             }),
             signal: controller.signal
         });
-        if (!response.ok) throw new Error(`HTTP ${response.status}`);
-        const payload = await response.json();
+        const payload = await response.json().catch(() => ({}));
+        if (!response.ok) {
+            const requestError = new Error(payload.error || `HTTP ${response.status}`);
+            requestError.status = response.status;
+            requestError.code = payload.error || '';
+            throw requestError;
+        }
         const stores = Array.isArray(payload.stores) ? payload.stores : [];
         activeStoresDB = stores
             .map(store => ({
@@ -242,12 +247,18 @@ async function fetchNearbyStores(keyword = keywordSearchQuery) {
     } catch (error) {
         if (error.name === 'AbortError' && activeStoreSearchController !== controller) return false;
         activeStoresDB = [];
+        const osmServicesFailed = /^osm_services_/.test(error.code || '');
+        const rateLimited = error.status === 429;
         storeSearchState = {
             status: 'error',
             retrieval: '',
             message: error.name === 'AbortError'
                 ? '店舗検索がタイムアウトしました。範囲を狭めて再度お試しください。'
-                : '店舗情報を取得できませんでした。時間をおいて再度お試しください。'
+                : rateLimited
+                    ? '短時間に検索が集中しました。しばらく待ってから再度お試しください。'
+                    : osmServicesFailed
+                        ? 'OpenStreetMapの検索サービスが混雑しています。範囲を狭めるか、時間をおいて再度お試しください。'
+                        : '店舗情報を取得できませんでした。時間をおいて再度お試しください。'
         };
         return false;
     } finally {
@@ -647,7 +658,9 @@ function getRetrievalLabel(retrieval) {
         device_cache: '端末キャッシュ',
         device_cache_stale: '端末キャッシュ（期限切れ）',
         fetch_failed: '取得失敗',
-        bundled: 'アプリ内登録データ'
+        bundled: 'アプリ内登録データ',
+        openstreetmap_live: 'OpenStreetMapから取得',
+        openstreetmap_photon: 'OpenStreetMap予備検索'
     };
     return labels[retrieval] || '取得元不明';
 }
@@ -726,6 +739,7 @@ function renderStoreList() {
     if (countLabel) {
         const retrievalLabel = {
             openstreetmap_live: 'OSMから取得',
+            openstreetmap_photon: 'OSM予備検索',
             server_cache: 'サーバーキャッシュ',
             server_cache_stale: '期限切れキャッシュ'
         }[storeSearchState.retrieval] || '';

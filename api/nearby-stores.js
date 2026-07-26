@@ -1,7 +1,10 @@
 const CACHE_TTL_MS = 10 * 60 * 1000;
-const REQUEST_TIMEOUT_MS = 9_000;
+const OVERPASS_TIMEOUT_MS = 4_000;
+const PHOTON_TIMEOUT_MS = 4_000;
 const OVERPASS_URL = 'https://overpass-api.de/api/interpreter';
+const PHOTON_URL = 'https://photon.komoot.io';
 const MAX_RESULTS = 150;
+const PHOTON_MAX_RESULTS = 100;
 const responseCache = new Map();
 const clientWindows = new Map();
 
@@ -82,7 +85,7 @@ function buildQuery(lat, lng, radius, keyword) {
         ];
     }
 
-    return `[out:json][timeout:8];(${selectors.join('')});out tags center ${MAX_RESULTS};`;
+    return `[out:json][timeout:3];(${selectors.join('')});out tags center ${MAX_RESULTS};`;
 }
 
 function getCategory(tags = {}) {
@@ -158,7 +161,7 @@ function normalizeElement(element, centerLat, centerLng) {
 
 async function fetchOverpass(query) {
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
+    const timeoutId = setTimeout(() => controller.abort(), OVERPASS_TIMEOUT_MS);
     try {
         const response = await fetch(OVERPASS_URL, {
             method: 'POST',
@@ -175,6 +178,133 @@ async function fetchOverpass(query) {
     } finally {
         clearTimeout(timeoutId);
     }
+}
+
+function getDistanceMeters(lat1, lng1, lat2, lng2) {
+    const toRadians = value => value * Math.PI / 180;
+    const dLat = toRadians(lat2 - lat1);
+    const dLng = toRadians(lng2 - lng1);
+    const a = Math.sin(dLat / 2) ** 2 +
+        Math.cos(toRadians(lat1)) * Math.cos(toRadians(lat2)) *
+        Math.sin(dLng / 2) ** 2;
+    const safeA = Math.min(1, Math.max(0, a));
+    return 6371000 * 2 * Math.atan2(Math.sqrt(safeA), Math.sqrt(1 - safeA));
+}
+
+function getSearchBounds(lat, lng, radius) {
+    const latDelta = radius / 111_320;
+    const safeCos = Math.max(0.01, Math.abs(Math.cos(lat * Math.PI / 180)));
+    const lngDelta = radius / (111_320 * safeCos);
+    return [
+        Math.max(-180, lng - lngDelta),
+        Math.max(-90, lat - latDelta),
+        Math.min(180, lng + lngDelta),
+        Math.min(90, lat + latDelta)
+    ];
+}
+
+function normalizePhotonFeature(feature, centerLat, centerLng, radius) {
+    const properties = feature?.properties || {};
+    const coordinates = feature?.geometry?.coordinates;
+    const lng = Number(coordinates?.[0]);
+    const lat = Number(coordinates?.[1]);
+    const osmKey = String(properties.osm_key || '');
+    const osmValue = String(properties.osm_value || '');
+    const isStore = osmKey === 'shop' ||
+        (osmKey === 'amenity' &&
+            /restaurant|cafe|fast_food|bar|pub|food_court|pharmacy|clinic|hospital|fuel/.test(osmValue));
+    if (!isStore || !properties.name || !Number.isFinite(lat) || !Number.isFinite(lng)) return null;
+    if (getDistanceMeters(centerLat, centerLng, lat, lng) > radius + 20) return null;
+
+    const osmType = { N: 'node', W: 'way', R: 'relation' }[properties.osm_type];
+    const osmId = Number(properties.osm_id);
+    const tags = { [osmKey]: osmValue };
+    const address = [
+        properties.state,
+        properties.city,
+        properties.district,
+        properties.street,
+        properties.housenumber
+    ].filter(Boolean).join('');
+
+    return {
+        id: Number.isFinite(osmId) && osmType
+            ? `osm-${osmType}-${osmId}`
+            : `photon-${lat.toFixed(6)}-${lng.toFixed(6)}-${String(properties.name).slice(0, 40)}`,
+        osmType: osmType || '',
+        osmId: Number.isFinite(osmId) ? osmId : null,
+        name: String(properties.name).slice(0, 160),
+        category: getCategory(tags),
+        lat,
+        lng,
+        address: address || '住所情報なし（OpenStreetMap）',
+        areaKeys: [
+            properties.name,
+            properties.city,
+            properties.district,
+            properties.street,
+            osmKey,
+            osmValue
+        ].filter(Boolean).map(String),
+        acceptedPays: [...ALL_PAY_IDS],
+        confirmedPays: [],
+        paymentsVerified: false,
+        osmUrl: Number.isFinite(osmId) && osmType
+            ? `https://www.openstreetmap.org/${osmType}/${osmId}`
+            : 'https://www.openstreetmap.org/',
+        campaigns: {},
+        distanceHint: { centerLat, centerLng }
+    };
+}
+
+async function fetchPhoton(lat, lng, radius, keyword) {
+    const params = new URLSearchParams({
+        lat: String(lat),
+        lon: String(lng),
+        limit: String(PHOTON_MAX_RESULTS)
+    });
+    let path;
+    if (keyword) {
+        params.set('q', keyword);
+        params.set('bbox', getSearchBounds(lat, lng, radius).join(','));
+        params.set('countrycode', 'JP');
+        path = '/api/';
+    } else {
+        params.set('radius', String(radius / 1000));
+        params.append('osm_tag', 'shop');
+        params.append('osm_tag', 'amenity');
+        path = '/reverse';
+    }
+
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), PHOTON_TIMEOUT_MS);
+    try {
+        const photonResponse = await fetch(`${PHOTON_URL}${path}?${params}`, {
+            headers: {
+                Accept: 'application/json',
+                'User-Agent': 'PayCrossPro/1.0 (+https://pay-cross-search.vercel.app/)'
+            },
+            signal: controller.signal
+        });
+        if (!photonResponse.ok) throw new Error(`HTTP ${photonResponse.status}`);
+        return await photonResponse.json();
+    } finally {
+        clearTimeout(timeoutId);
+    }
+}
+
+function normalizeStores(items, normalize) {
+    const seen = new Set();
+    return items
+        .map(normalize)
+        .filter(store => {
+            if (!store) return false;
+            const key = `${store.name.toLowerCase()}|${store.lat.toFixed(5)}|${store.lng.toFixed(5)}`;
+            if (seen.has(key)) return false;
+            seen.add(key);
+            return true;
+        })
+        .slice(0, MAX_RESULTS);
 }
 
 module.exports = async function handler(request, response) {
@@ -207,21 +337,14 @@ module.exports = async function handler(request, response) {
         return response.status(200).json({ ...cached.payload, retrieval: 'server_cache' });
     }
 
+    let overpassError;
     try {
         const query = buildQuery(lat, lng, radius, keyword);
         const payload = await fetchOverpass(query);
-        const seen = new Set();
-        const stores = (Array.isArray(payload.elements) ? payload.elements : [])
-            .map(element => normalizeElement(element, lat, lng))
-            .filter(store => {
-                if (!store) return false;
-                const key = `${store.name.toLowerCase()}|${store.lat.toFixed(5)}|${store.lng.toFixed(5)}`;
-                if (seen.has(key)) return false;
-                seen.add(key);
-                return true;
-            })
-            .slice(0, MAX_RESULTS);
-
+        const stores = normalizeStores(
+            Array.isArray(payload.elements) ? payload.elements : [],
+            element => normalizeElement(element, lat, lng)
+        );
         const result = {
             checked_at: new Date().toISOString(),
             retrieval: 'openstreetmap_live',
@@ -232,6 +355,30 @@ module.exports = async function handler(request, response) {
         setBoundedCache(cacheKey, result);
         return response.status(200).json(result);
     } catch (error) {
+        overpassError = error;
+        console.warn('[nearby-stores] Overpass failed; trying Photon:', error?.message || error);
+    }
+
+    try {
+        const payload = await fetchPhoton(lat, lng, radius, keyword);
+        const stores = normalizeStores(
+            Array.isArray(payload.features) ? payload.features : [],
+            feature => normalizePhotonFeature(feature, lat, lng, radius)
+        );
+        const result = {
+            checked_at: new Date().toISOString(),
+            retrieval: 'openstreetmap_photon',
+            radius,
+            keyword,
+            stores
+        };
+        setBoundedCache(cacheKey, result);
+        return response.status(200).json(result);
+    } catch (photonError) {
+        console.error('[nearby-stores] All OSM services failed:', {
+            overpass: overpassError?.message || String(overpassError),
+            photon: photonError?.message || String(photonError)
+        });
         if (cached) {
             return response.status(200).json({
                 ...cached.payload,
@@ -239,8 +386,9 @@ module.exports = async function handler(request, response) {
                 stale: true
             });
         }
+        const timedOut = overpassError?.name === 'AbortError' || photonError?.name === 'AbortError';
         return response.status(502).json({
-            error: error.name === 'AbortError' ? 'upstream_timeout' : 'upstream_unavailable'
+            error: timedOut ? 'osm_services_timeout' : 'osm_services_unavailable'
         });
     }
 };
